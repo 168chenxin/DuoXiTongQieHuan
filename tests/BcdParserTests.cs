@@ -53,6 +53,7 @@ Windows 启动管理器
 标识符                  {bootmgr}
 默认                    {11111111-1111-1111-1111-111111111111}
 显示顺序                {11111111-1111-1111-1111-111111111111}
+超时                    10
 ";
 
     private static int Main()
@@ -63,6 +64,8 @@ Windows 启动管理器
             ParsesChineseProperties();
             FindsDefaultIdentifier();
             ParsesDisplayOrder();
+            ParsesTimeout();
+            RejectsInvalidTimeoutChanges();
             FiltersOutLoadersNotInTheBootMenu();
             DoesNotSelectEntriesWithoutBootMenuOrder();
             ComparesIdentifiersWithoutCaseSensitivity();
@@ -129,6 +132,31 @@ Windows 启动管理器
             englishOrder[0],
             "Expected the first English display-order entry.");
         AssertEqual(1, chineseOrder.Count, "Expected one entry in the Chinese display order.");
+    }
+
+    private static void ParsesTimeout()
+    {
+        AssertEqual(15, BcdParser.ParseTimeout(BootManagerOutput), "Expected the English timeout.");
+        AssertEqual(10, BcdParser.ParseTimeout(ChineseBootManagerOutput), "Expected the Chinese timeout.");
+        AssertEqual(-1, BcdParser.ParseTimeout("timeout invalid"), "Expected an invalid timeout to fail parsing.");
+    }
+
+    private static void RejectsInvalidTimeoutChanges()
+    {
+        AssertThrowsArgumentOutOfRange(-1);
+        AssertThrowsArgumentOutOfRange(1000);
+    }
+
+    private static void AssertThrowsArgumentOutOfRange(int seconds)
+    {
+        try
+        {
+            BcdService.SetTimeout(seconds);
+            throw new InvalidOperationException("Expected an invalid timeout to be rejected.");
+        }
+        catch (ArgumentOutOfRangeException)
+        {
+        }
     }
 
     private static void FiltersOutLoadersNotInTheBootMenu()

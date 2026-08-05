@@ -10,11 +10,23 @@ namespace DualBootSwitcher
     {
         public static List<BootEntry> LoadEntries()
         {
+            return LoadConfiguration().Entries;
+        }
+
+        public static BootConfiguration LoadConfiguration()
+        {
             string loaderOutput = RunBcdEdit("/enum osloader /v");
             string bootManagerOutput = RunBcdEdit("/enum {bootmgr} /v");
             string defaultIdentifier = BcdParser.ParseDefaultIdentifier(bootManagerOutput);
+            int timeoutSeconds = BcdParser.ParseTimeout(bootManagerOutput);
             List<BootEntry> discoveredEntries = BcdParser.ParseBootLoaders(loaderOutput);
             List<string> displayOrder = BcdParser.ParseDisplayOrder(bootManagerOutput);
+
+            if (timeoutSeconds < 0)
+            {
+                throw new InvalidOperationException(
+                    "无法读取 Windows 启动菜单的超时时间。当前版本支持中文和英文 Windows 输出。");
+            }
 
             if (displayOrder.Count == 0)
             {
@@ -34,7 +46,7 @@ namespace DualBootSwitcher
                 entry.IsDefault = BcdParser.IdentifiersMatch(entry.Identifier, defaultIdentifier);
             }
 
-            return entries;
+            return new BootConfiguration(entries, timeoutSeconds);
         }
 
         public static void SetDefault(BootEntry entry)
@@ -45,6 +57,19 @@ namespace DualBootSwitcher
             }
 
             RunBcdEdit("/default " + entry.Identifier);
+        }
+
+        public static void SetTimeout(int seconds)
+        {
+            if (seconds < 0 || seconds > 999)
+            {
+                throw new ArgumentOutOfRangeException(
+                    "seconds",
+                    seconds,
+                    "启动菜单超时时间必须在 0 到 999 秒之间。");
+            }
+
+            RunBcdEdit("/timeout " + seconds);
         }
 
         public static void RestartComputer()

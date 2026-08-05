@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Text.RegularExpressions;
 
 namespace DualBootSwitcher
@@ -14,6 +15,9 @@ namespace DualBootSwitcher
             @"^[ \t]*(?:displayorder|显示顺序)[ \t]+(?<identifiers>\{[^}\r\n]+\}(?:\r?\n[ \t]+\{[^}\r\n]+\})*)",
             RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.CultureInvariant);
         private static readonly Regex IdentifierPattern = new Regex(@"\{[^}\r\n]+\}");
+        private static readonly Regex TimeoutPattern = new Regex(
+            @"^\s*(?:timeout|超时)\s+(?<seconds>\d+)\s*$",
+            RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.CultureInvariant);
 
         public static List<BootEntry> ParseBootLoaders(string output)
         {
@@ -67,6 +71,27 @@ namespace DualBootSwitcher
             }
 
             return identifiers;
+        }
+
+        public static int ParseTimeout(string output)
+        {
+            if (string.IsNullOrWhiteSpace(output))
+            {
+                return -1;
+            }
+
+            Match timeout = TimeoutPattern.Match(output);
+            int seconds;
+            if (!timeout.Success || !int.TryParse(
+                timeout.Groups["seconds"].Value,
+                NumberStyles.None,
+                CultureInfo.InvariantCulture,
+                out seconds))
+            {
+                return -1;
+            }
+
+            return seconds;
         }
 
         public static bool IdentifiersMatch(string first, string second)

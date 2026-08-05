@@ -1,5 +1,20 @@
+using System.Collections.Generic;
+
 namespace DualBootSwitcher
 {
+    internal sealed class BootConfiguration
+    {
+        public BootConfiguration(List<BootEntry> entries, int timeoutSeconds)
+        {
+            Entries = entries;
+            TimeoutSeconds = timeoutSeconds;
+        }
+
+        public List<BootEntry> Entries { get; private set; }
+
+        public int TimeoutSeconds { get; private set; }
+    }
+
     internal sealed class BootEntry
     {
         public BootEntry(string identifier, string description, string device)

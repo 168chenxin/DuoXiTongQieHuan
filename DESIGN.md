@@ -134,6 +134,12 @@ Depth is created with `#F8FAFC` behind white surfaces and one-pixel `#E2E8F0` bo
 - **Storage:** current-user registry under `Software\DualBootSwitcher\BootRemarks`, keyed by the BCD identifier.
 - **Safety:** remarks never call `bcdedit`; only the explicit default/restart actions modify BCD.
 
+### Boot Timeout
+- **Display:** a compact secondary button beside the boot-entry count shows the active timeout in seconds.
+- **Input:** a numeric control accepts `0` through `999`; `0` is explicitly described as skipping system selection.
+- **Confirmation:** after leaving the numeric dialog, a second warning states the old value, new value, and effect before `bcdedit /timeout` runs.
+- **State:** the button is disabled while BCD is loading or when the timeout cannot be read.
+
 ### Current Default Surface
 - **Style:** a white 8px-radius surface on the slate canvas.
 - **Content:** a label, system name, and pale-indigo partition badge with full text available by tooltip.

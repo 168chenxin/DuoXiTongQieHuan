@@ -15,6 +15,7 @@ namespace DualBootSwitcher
         private readonly AnimatedLabel entryCountLabel;
         private readonly AnimatedLabel actionStatusLabel;
         private readonly ToolTip interfaceToolTip;
+        private readonly AnimatedButton timeoutButton;
         private readonly AnimatedButton refreshButton;
         private readonly AnimatedButton editRemarkButton;
         private readonly AnimatedButton setDefaultButton;
@@ -22,6 +23,7 @@ namespace DualBootSwitcher
         private readonly Font emphasizedRemarkFont;
         private Icon applicationIcon;
         private Image applicationLogo;
+        private int currentTimeoutSeconds = -1;
 
         public MainForm()
         {
@@ -113,6 +115,14 @@ namespace DualBootSwitcher
                 TextAlign = ContentAlignment.MiddleRight
             };
 
+            timeoutButton = CreateButton("启动等待：读取中...", 154, false);
+            timeoutButton.Font = new Font("Segoe UI", 8.5F, FontStyle.Bold, GraphicsUnit.Point);
+            timeoutButton.Location = new Point(420, 205);
+            timeoutButton.Size = new Size(154, 32);
+            timeoutButton.AccessibleName = "修改启动菜单等待时间";
+            timeoutButton.Enabled = false;
+            timeoutButton.Click += delegate { EditBootTimeout(); };
+
             bootEntriesGrid = CreateBootEntriesGrid();
             bootEntriesGrid.Location = new Point(28, 240);
             bootEntriesGrid.Size = new Size(724, 126);
@@ -164,6 +174,7 @@ namespace DualBootSwitcher
 
             Controls.Add(defaultBand);
             Controls.Add(bootMenuLabel);
+            Controls.Add(timeoutButton);
             Controls.Add(entryCountLabel);
             Controls.Add(bootEntriesGrid);
             Controls.Add(divider);
@@ -413,6 +424,9 @@ namespace DualBootSwitcher
         {
             UseWaitCursor = true;
             refreshButton.Enabled = false;
+            timeoutButton.Enabled = false;
+            timeoutButton.Text = "启动等待：读取中...";
+            currentTimeoutSeconds = -1;
             bootEntriesGrid.Enabled = false;
             SetActionButtonsEnabled(false);
             bootEntriesGrid.Rows.Clear();
@@ -425,9 +439,11 @@ namespace DualBootSwitcher
 
             try
             {
-                List<BootEntry> bootEntries = BcdService.LoadEntries();
+                BootConfiguration configuration = BcdService.LoadConfiguration();
+                List<BootEntry> bootEntries = configuration.Entries;
                 BootEntry defaultEntry = null;
                 DataGridViewRow firstSwitchableRow = null;
+                SetTimeoutDisplay(configuration.TimeoutSeconds);
 
                 foreach (BootEntry entry in bootEntries)
                 {
@@ -463,6 +479,8 @@ namespace DualBootSwitcher
             {
                 currentDefaultNameLabel.Text = "无法读取启动项";
                 currentDefaultDeviceLabel.Visible = false;
+                timeoutButton.Text = "启动等待：读取失败";
+                timeoutButton.Enabled = false;
                 actionStatusLabel.Text = "请检查管理员权限和 Windows 引导配置";
                 MessageBox.Show(
                     "读取 Windows 引导配置失败。请确认程序已获得管理员权限。\r\n\r\n" + exception.Message,
@@ -558,6 +576,76 @@ namespace DualBootSwitcher
             bootEntriesGrid.Rows[eventArgs.RowIndex].Selected = true;
             bootEntriesGrid.CurrentCell = bootEntriesGrid.Rows[eventArgs.RowIndex].Cells[0];
             EditSelectedRemark();
+        }
+
+        private void EditBootTimeout()
+        {
+            if (currentTimeoutSeconds < 0)
+            {
+                return;
+            }
+
+            int requestedSeconds;
+            using (var dialog = new TimeoutDialog(currentTimeoutSeconds))
+            {
+                if (dialog.ShowDialog(this) != DialogResult.OK)
+                {
+                    return;
+                }
+
+                requestedSeconds = dialog.TimeoutSeconds;
+            }
+
+            if (requestedSeconds == currentTimeoutSeconds)
+            {
+                actionStatusLabel.Text = "启动等待时间没有变化";
+                interfaceToolTip.SetToolTip(actionStatusLabel, actionStatusLabel.Text);
+                return;
+            }
+
+            string impact = requestedSeconds == 0
+                ? "0 秒会跳过系统选择，直接启动当前默认系统。"
+                : "开机时，启动菜单会等待 " + requestedSeconds + " 秒后自动进入默认系统。";
+            DialogResult confirmation = MessageBox.Show(
+                "确认将启动等待时间从 " + currentTimeoutSeconds + " 秒修改为 " +
+                requestedSeconds + " 秒吗？\r\n\r\n" + impact,
+                "确认修改启动等待时间",
+                MessageBoxButtons.OKCancel,
+                MessageBoxIcon.Warning,
+                MessageBoxDefaultButton.Button2);
+
+            if (confirmation != DialogResult.OK)
+            {
+                return;
+            }
+
+            try
+            {
+                timeoutButton.Enabled = false;
+                BcdService.SetTimeout(requestedSeconds);
+                SetTimeoutDisplay(requestedSeconds);
+                actionStatusLabel.Text = "启动等待时间已设置为 " + requestedSeconds + " 秒";
+                interfaceToolTip.SetToolTip(actionStatusLabel, actionStatusLabel.Text);
+            }
+            catch (Exception exception)
+            {
+                timeoutButton.Enabled = currentTimeoutSeconds >= 0;
+                MessageBox.Show(
+                    "修改启动等待时间失败。\r\n\r\n" + exception.Message,
+                    Text,
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+            }
+        }
+
+        private void SetTimeoutDisplay(int seconds)
+        {
+            currentTimeoutSeconds = seconds;
+            timeoutButton.Text = "启动等待：" + seconds + " 秒";
+            timeoutButton.Enabled = true;
+            interfaceToolTip.SetToolTip(
+                timeoutButton,
+                "当前启动菜单会等待 " + seconds + " 秒；点击可修改");
         }
 
         private void EditSelectedRemark()
