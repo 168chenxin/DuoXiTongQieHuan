@@ -19,6 +19,7 @@ namespace DualBootSwitcher
         private readonly AnimatedButton editRemarkButton;
         private readonly AnimatedButton setDefaultButton;
         private readonly AnimatedButton setDefaultAndRestartButton;
+        private readonly Font emphasizedRemarkFont;
         private Icon applicationIcon;
         private Image applicationLogo;
 
@@ -32,6 +33,7 @@ namespace DualBootSwitcher
             BackColor = UiTheme.Canvas;
             Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
             AutoScaleMode = AutoScaleMode.Dpi;
+            emphasizedRemarkFont = new Font("Segoe UI", 10F, FontStyle.Bold, GraphicsUnit.Point);
 
             LoadApplicationAssets();
             interfaceToolTip = new ToolTip
@@ -190,6 +192,11 @@ namespace DualBootSwitcher
             if (disposing && interfaceToolTip != null)
             {
                 interfaceToolTip.Dispose();
+            }
+
+            if (disposing && emphasizedRemarkFont != null)
+            {
+                emphasizedRemarkFont.Dispose();
             }
 
             base.Dispose(disposing);
@@ -435,10 +442,7 @@ namespace DualBootSwitcher
                     row.Cells[0].ToolTipText = entry.Description;
                     row.Cells[1].ToolTipText = entry.Device;
                     row.Cells[2].ToolTipText = remark;
-                    if (string.IsNullOrWhiteSpace(remark))
-                    {
-                        row.Cells[2].Style.ForeColor = UiTheme.Muted;
-                    }
+                    ApplyRemarkCellStyle(row.Cells[2], remark);
 
                     if (entry.IsDefault)
                     {
@@ -599,9 +603,7 @@ namespace DualBootSwitcher
                 string remark = GetEntryRemark(entry);
                 row.Cells[2].Value = GetRemarkDisplay(remark);
                 row.Cells[2].ToolTipText = remark;
-                row.Cells[2].Style.ForeColor = string.IsNullOrWhiteSpace(remark)
-                    ? UiTheme.Muted
-                    : UiTheme.Ink;
+                ApplyRemarkCellStyle(row.Cells[2], remark);
                 break;
             }
 
@@ -690,6 +692,16 @@ namespace DualBootSwitcher
         private static string GetRemarkDisplay(string remark)
         {
             return string.IsNullOrWhiteSpace(remark) ? "未设置" : remark;
+        }
+
+        private void ApplyRemarkCellStyle(DataGridViewCell cell, string remark)
+        {
+            bool hasRemark = !string.IsNullOrWhiteSpace(remark);
+            cell.Style.Font = hasRemark
+                ? emphasizedRemarkFont
+                : bootEntriesGrid.DefaultCellStyle.Font;
+            cell.Style.ForeColor = hasRemark ? UiTheme.Accent : UiTheme.Muted;
+            cell.Style.SelectionForeColor = hasRemark ? UiTheme.Accent : UiTheme.Ink;
         }
 
         private static string GetEntryDisplayName(BootEntry entry)

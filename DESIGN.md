@@ -108,8 +108,8 @@ The five reference colors are `#6366F1`, `#818CF8`, `#E0E7FF`, `#F8FAFC`, and `#
 - **Label** (700, 12px, 1.2): table headers, status labels, and action state.
 
 ### Weight Roles
-- **Bold:** application title, current default, section headings, system name, partition, status, and the primary restart action.
-- **Regular:** remarks, metadata, helper text, refresh, edit, cancel, and secondary actions.
+- **Bold:** application title, current default, section headings, system name, partition, status, populated remarks, and the primary restart action.
+- **Regular:** empty remark placeholders, metadata, helper text, refresh, edit, cancel, and secondary actions.
 
 ## 4. Elevation
 
@@ -126,7 +126,7 @@ Depth is created with `#F8FAFC` behind white surfaces and one-pixel `#E2E8F0` bo
 ### Boot Table
 - **Style:** white rows, a Dashboard Canvas header, an antialiased 8px outer boundary, and a full-row selection model.
 - **Columns:** boot system, partition, saved purpose remark, and written state.
-- **Weight:** system, partition, and status are bold for scanning; remarks stay regular to preserve hierarchy.
+- **Weight:** system, partition, and status are bold for scanning; populated remarks use bold Accent text, while `未设置` remains regular Muted text.
 - **State:** the default system receives written status; the selected target eases into the pale-indigo wash.
 
 ### Remarks
