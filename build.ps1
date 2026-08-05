@@ -27,6 +27,7 @@ $executablePath = Join-Path $outputDirectory 'DualBootSwitcher.exe'
     "/win32icon:$iconPath" `
     "/win32manifest:$root\src\app.manifest" `
     "/resource:$embeddedLogoPath,DualBootSwitcher.Logo.png" `
+    "/resource:$root\LICENSE,DualBootSwitcher.LICENSE.txt" `
     /r:System.dll /r:System.Drawing.dll /r:System.Windows.Forms.dll `
     "$root\src\AssemblyInfo.cs" `
     "$root\src\BcdModels.cs" `
@@ -46,7 +47,7 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 $packagePath = Join-Path $outputDirectory 'DualBootSwitcher-portable.zip'
-Compress-Archive -LiteralPath $executablePath, (Join-Path $root 'README.md'), (Join-Path $root 'assets\THIRD_PARTY_NOTICES.md') `
+Compress-Archive -LiteralPath $executablePath, (Join-Path $root 'README.md'), (Join-Path $root 'CHANGELOG.md'), (Join-Path $root 'LICENSE'), (Join-Path $root 'assets\THIRD_PARTY_NOTICES.md') `
     -DestinationPath $packagePath -Force
 
 Write-Host "Built: $executablePath"

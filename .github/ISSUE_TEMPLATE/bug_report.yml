@@ -1,0 +1,43 @@
+name: Bug report
+description: 报告可复现的问题
+title: "[Bug] "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        请先确认问题不是权限、BCD 配置或 SmartScreen 提示导致的环境差异。
+  - type: input
+    id: version
+    attributes:
+      label: 软件版本
+      placeholder: v1.2.0
+    validations:
+      required: true
+  - type: input
+    id: windows
+    attributes:
+      label: Windows 版本
+      placeholder: Windows 11 23H2
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: 复现步骤
+      description: 请勿粘贴包含个人路径或敏感引导标识的完整 BCD 输出。
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 预期行为
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: 实际行为
+    validations:
+      required: true

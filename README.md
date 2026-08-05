@@ -2,6 +2,10 @@
 
 一个可直接复制运行的 Windows 小工具，用于在两个 Windows 引导项之间快速切换。
 
+## 下载
+
+打开 GitHub 仓库的 **Releases** 页面，下载 `DualBootSwitcher.exe`（单文件版）或 `DualBootSwitcher-portable.zip`（附带 README 和许可证）。无需安装额外组件；首次运行仍会按 Windows 的 UAC 规则申请管理员权限。
+
 ## 便携运行
 
 - 适用于 Windows 10 和 Windows 11，使用系统自带的 .NET Framework 4.x；不需要安装 SDK、运行库、DLL 或其他附件。
@@ -47,7 +51,7 @@
 .\run-tests.ps1
 ```
 
-构建产物会生成在 `release\DualBootSwitcher.exe`，便携分发包会生成在 `release\DualBootSwitcher-portable.zip`。
+构建产物会生成在 `release\DualBootSwitcher.exe`，便携分发包会生成在 `release\DualBootSwitcher-portable.zip`。GitHub Actions 会在推送 `v*` 标签时自动构建并创建 Release。
 
 ## 图标来源
 

@@ -70,7 +70,10 @@ Windows 启动管理器
             FiltersOutLoadersNotInTheBootMenu();
             DoesNotSelectEntriesWithoutBootMenuOrder();
             ComparesIdentifiersWithoutCaseSensitivity();
-            ReadsTheActiveBcdStore();
+            if (Environment.GetEnvironmentVariable("DUAL_BOOT_SKIP_LIVE_BCD") != "1")
+            {
+                ReadsTheActiveBcdStore();
+            }
             Console.WriteLine("BcdParser tests passed.");
             return 0;
         }

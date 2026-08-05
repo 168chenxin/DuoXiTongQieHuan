@@ -1,0 +1,76 @@
+name: Build and release
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run tests
+        shell: pwsh
+        env:
+          DUAL_BOOT_SKIP_LIVE_BCD: "1"
+        run: ./run-tests.ps1
+
+      - name: Validate release version
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: pwsh
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: ./tools/validate-release-version.ps1 -Tag $env:RELEASE_TAG
+
+      - name: Build portable package
+        shell: pwsh
+        run: ./build.ps1
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: DualBootSwitcher-${{ github.sha }}
+          path: |
+            release/DualBootSwitcher.exe
+            release/DualBootSwitcher-portable.zip
+          if-no-files-found: error
+          retention-days: 14
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout release metadata
+        uses: actions/checkout@v4
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: DualBootSwitcher-${{ github.sha }}
+          path: release
+
+      - name: Create GitHub Release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create $env:GITHUB_REF_NAME `
+            .\release\DualBootSwitcher.exe `
+            .\release\DualBootSwitcher-portable.zip `
+            .\LICENSE `
+            --verify-tag `
+            --title "DualBootSwitcher $env:GITHUB_REF_NAME" `
+            --generate-notes
