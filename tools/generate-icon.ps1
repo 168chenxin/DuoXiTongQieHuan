@@ -6,88 +6,89 @@ param(
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.Drawing
 
-function New-RoundedRectanglePath {
-    param(
-        [single]$X,
-        [single]$Y,
-        [single]$Width,
-        [single]$Height,
-        [single]$Radius
-    )
+$scriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
+$sourcePath = Join-Path $scriptRoot '..\assets\dual-boot-switcher-logo.png'
 
-    $path = New-Object System.Drawing.Drawing2D.GraphicsPath
-    $diameter = $Radius * 2
-    $path.AddArc($X, $Y, $diameter, $diameter, 180, 90)
-    $path.AddArc($X + $Width - $diameter, $Y, $diameter, $diameter, 270, 90)
-    $path.AddArc($X + $Width - $diameter, $Y + $Height - $diameter, $diameter, $diameter, 0, 90)
-    $path.AddArc($X, $Y + $Height - $diameter, $diameter, $diameter, 90, 90)
-    $path.CloseFigure()
-    return $path
+if (-not (Test-Path -LiteralPath $sourcePath)) {
+    throw "The logo source was not found: $sourcePath"
 }
+
+$sourceImage = [System.Drawing.Bitmap]::FromFile((Resolve-Path -LiteralPath $sourcePath))
+
+function Get-AlphaBounds {
+    param([System.Drawing.Bitmap]$Image)
+
+    $left = $Image.Width
+    $top = $Image.Height
+    $right = -1
+    $bottom = -1
+
+    for ($y = 0; $y -lt $Image.Height; $y++) {
+        for ($x = 0; $x -lt $Image.Width; $x++) {
+            if ($Image.GetPixel($x, $y).A -gt 0) {
+                if ($x -lt $left) { $left = $x }
+                if ($y -lt $top) { $top = $y }
+                if ($x -gt $right) { $right = $x }
+                if ($y -gt $bottom) { $bottom = $y }
+            }
+        }
+    }
+
+    if ($right -lt $left -or $bottom -lt $top) {
+        return New-Object System.Drawing.Rectangle(0, 0, $Image.Width, $Image.Height)
+    }
+
+    return New-Object System.Drawing.Rectangle(
+        $left,
+        $top,
+        ($right - $left + 1),
+        ($bottom - $top + 1))
+}
+
+$sourceBounds = Get-AlphaBounds $sourceImage
 
 function New-ApplicationBitmap {
     param([int]$Size)
 
-    $scale = $Size / 256.0
     $bitmap = New-Object System.Drawing.Bitmap($Size, $Size, [System.Drawing.Imaging.PixelFormat]::Format32bppArgb)
     $graphics = [System.Drawing.Graphics]::FromImage($bitmap)
-    $graphics.SmoothingMode = [System.Drawing.Drawing2D.SmoothingMode]::AntiAlias
     $graphics.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic
     $graphics.PixelOffsetMode = [System.Drawing.Drawing2D.PixelOffsetMode]::HighQuality
+    $graphics.CompositingMode = [System.Drawing.Drawing2D.CompositingMode]::SourceCopy
 
     try {
-        $backgroundPath = New-RoundedRectanglePath (18 * $scale) (18 * $scale) (220 * $scale) (220 * $scale) (50 * $scale)
-        $backgroundBrush = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::FromArgb(99, 102, 241))
-        $graphics.FillPath($backgroundBrush, $backgroundPath)
-
-        $screenOuter = New-RoundedRectanglePath (40 * $scale) (79 * $scale) (133 * $scale) (76 * $scale) (12 * $scale)
-        $screenBrush = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::FromArgb(255, 255, 255))
-        $graphics.FillPath($screenBrush, $screenOuter)
-
-        $screenInner = New-RoundedRectanglePath (51 * $scale) (90 * $scale) (111 * $scale) (54 * $scale) (5 * $scale)
-        $screenInnerBrush = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::FromArgb(30, 41, 59))
-        $graphics.FillPath($screenInnerBrush, $screenInner)
-
-        $standPen = New-Object System.Drawing.Pen([System.Drawing.Color]::FromArgb(255, 255, 255), (10 * $scale))
-        $standPen.StartCap = [System.Drawing.Drawing2D.LineCap]::Round
-        $standPen.EndCap = [System.Drawing.Drawing2D.LineCap]::Round
-        $graphics.DrawLine($standPen, (106 * $scale), (156 * $scale), (106 * $scale), (180 * $scale))
-        $graphics.DrawLine($standPen, (79 * $scale), (181 * $scale), (133 * $scale), (181 * $scale))
-
-        $gearCenterX = 184 * $scale
-        $gearCenterY = 68 * $scale
-        $gearPen = New-Object System.Drawing.Pen([System.Drawing.Color]::FromArgb(129, 140, 248), (13 * $scale))
-        $gearPen.StartCap = [System.Drawing.Drawing2D.LineCap]::Round
-        $gearPen.EndCap = [System.Drawing.Drawing2D.LineCap]::Round
-
-        for ($index = 0; $index -lt 8; $index++) {
-            $angle = (($index * 45) - 90) * [Math]::PI / 180
-            $innerRadius = 29 * $scale
-            $outerRadius = 43 * $scale
-            $graphics.DrawLine(
-                $gearPen,
-                $gearCenterX + ([Math]::Cos($angle) * $innerRadius),
-                $gearCenterY + ([Math]::Sin($angle) * $innerRadius),
-                $gearCenterX + ([Math]::Cos($angle) * $outerRadius),
-                $gearCenterY + ([Math]::Sin($angle) * $outerRadius))
+        $graphics.Clear([System.Drawing.Color]::Transparent)
+        $inset = $Size * 0.03
+        $usableSize = $Size - (2 * $inset)
+        $sourceAspect = $sourceBounds.Width / [double]$sourceBounds.Height
+        if ($sourceAspect -ge 1) {
+            $destinationWidth = $usableSize
+            $destinationHeight = $usableSize / $sourceAspect
+            $destinationX = ($Size - $destinationWidth) / 2
+            $destinationY = ($Size - $destinationHeight) / 2
+        }
+        else {
+            $destinationHeight = $usableSize
+            $destinationWidth = $usableSize * $sourceAspect
+            $destinationX = ($Size - $destinationWidth) / 2
+            $destinationY = ($Size - $destinationHeight) / 2
         }
 
-        $gearBrush = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::FromArgb(129, 140, 248))
-        $graphics.FillEllipse($gearBrush, $gearCenterX - (32 * $scale), $gearCenterY - (32 * $scale), (64 * $scale), (64 * $scale))
-        $gearCenterBrush = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::FromArgb(99, 102, 241))
-        $graphics.FillEllipse($gearCenterBrush, $gearCenterX - (13 * $scale), $gearCenterY - (13 * $scale), (26 * $scale), (26 * $scale))
+        $destination = New-Object System.Drawing.Rectangle(
+            [int][Math]::Round($destinationX),
+            [int][Math]::Round($destinationY),
+            [int][Math]::Round($destinationWidth),
+            [int][Math]::Round($destinationHeight))
+        $graphics.DrawImage(
+            $sourceImage,
+            $destination,
+            $sourceBounds.X,
+            $sourceBounds.Y,
+            $sourceBounds.Width,
+            $sourceBounds.Height,
+            [System.Drawing.GraphicsUnit]::Pixel)
     }
     finally {
-        if ($backgroundPath) { $backgroundPath.Dispose() }
-        if ($backgroundBrush) { $backgroundBrush.Dispose() }
-        if ($screenOuter) { $screenOuter.Dispose() }
-        if ($screenBrush) { $screenBrush.Dispose() }
-        if ($screenInner) { $screenInner.Dispose() }
-        if ($screenInnerBrush) { $screenInnerBrush.Dispose() }
-        if ($standPen) { $standPen.Dispose() }
-        if ($gearPen) { $gearPen.Dispose() }
-        if ($gearBrush) { $gearBrush.Dispose() }
-        if ($gearCenterBrush) { $gearCenterBrush.Dispose() }
         $graphics.Dispose()
     }
 
@@ -101,20 +102,25 @@ New-Item -ItemType Directory -Force -Path $outputDirectory | Out-Null
 $sizes = @(16, 24, 32, 48, 64, 128, 256)
 $payloads = @()
 
-foreach ($size in $sizes) {
-    $bitmap = New-ApplicationBitmap $size
-    $memory = New-Object System.IO.MemoryStream
-    try {
-        $bitmap.Save($memory, [System.Drawing.Imaging.ImageFormat]::Png)
-        $payloads += [PSCustomObject]@{
-            Size = $size
-            Bytes = $memory.ToArray()
+try {
+    foreach ($size in $sizes) {
+        $bitmap = New-ApplicationBitmap $size
+        $memory = New-Object System.IO.MemoryStream
+        try {
+            $bitmap.Save($memory, [System.Drawing.Imaging.ImageFormat]::Png)
+            $payloads += [PSCustomObject]@{
+                Size = $size
+                Bytes = $memory.ToArray()
+            }
+        }
+        finally {
+            $memory.Dispose()
+            $bitmap.Dispose()
         }
     }
-    finally {
-        $memory.Dispose()
-        $bitmap.Dispose()
-    }
+}
+finally {
+    $sourceImage.Dispose()
 }
 
 $stream = [System.IO.File]::Open($resolvedOutputPath, [System.IO.FileMode]::Create)

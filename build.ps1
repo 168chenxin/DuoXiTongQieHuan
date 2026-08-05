@@ -30,8 +30,10 @@ $executablePath = Join-Path $outputDirectory 'DualBootSwitcher.exe'
     "$root\src\BcdModels.cs" `
     "$root\src\BcdParser.cs" `
     "$root\src\BcdService.cs" `
+    "$root\src\BootRemarkStore.cs" `
     "$root\src\UiTheme.cs" `
     "$root\src\UiControls.cs" `
+    "$root\src\RemarkDialog.cs" `
     "$root\src\MainForm.cs" `
     "$root\src\Program.cs"
 

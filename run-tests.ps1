@@ -50,6 +50,30 @@ if ($LASTEXITCODE -ne 0) {
     throw "UI tests failed with exit code $LASTEXITCODE."
 }
 
+$remarkTestExecutable = Join-Path $outputDirectory 'BootRemarkStoreTests.exe'
+
+& $compiler /nologo /utf8output /codepage:65001 /target:exe "/out:$remarkTestExecutable" `
+    /r:System.dll `
+    "$root\src\BootRemarkStore.cs" `
+    "$root\tests\BootRemarkStoreTests.cs"
+
+if ($LASTEXITCODE -ne 0) {
+    throw "Boot remark test compilation failed with exit code $LASTEXITCODE."
+}
+
+& $remarkTestExecutable
+
+if ($LASTEXITCODE -ne 0) {
+    throw "Boot remark tests failed with exit code $LASTEXITCODE."
+}
+
+$logoPath = Join-Path $root 'assets\dual-boot-switcher-logo.png'
+if (-not (Test-Path -LiteralPath $logoPath)) {
+    throw 'The embedded logo source is missing.'
+}
+
+Write-Host 'Embedded logo source test passed.'
+
 [xml]$manifest = Get-Content -Raw -Encoding UTF8 (Join-Path $root 'src\app.manifest')
 $namespaceManager = New-Object System.Xml.XmlNamespaceManager($manifest.NameTable)
 $namespaceManager.AddNamespace('asmv3', 'urn:schemas-microsoft-com:asm.v3')

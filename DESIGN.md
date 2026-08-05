@@ -69,7 +69,7 @@ components:
 
 The visual source of truth is the [ui-modern-dash palette](https://www.ysdaima.com/palettes/ui-modern-dash/). Its light slate canvas, white surfaces, indigo actions, pale-indigo selection states, and deep slate typography are mapped onto a compact Windows control surface.
 
-The utility keeps one status surface and one scan-friendly boot table. It borrows the reference's palette, spacing, light header, and restrained rounding without copying its marketing preview or dashboard card density. Rounded surfaces use antialiased GDI+ paths instead of hard control-region clipping.
+The utility keeps one status surface and one scan-friendly boot table. It borrows the reference's palette, spacing, light header, and restrained rounding without copying its marketing preview or dashboard card density. Rounded surfaces use antialiased GDI+ paths instead of hard control-region clipping. The user-provided dual-boot mark is embedded into the executable and reused in the title bar.
 
 ## 2. Colors
 
@@ -121,7 +121,13 @@ Depth is created with `#F8FAFC` behind white surfaces and one-pixel `#E2E8F0` bo
 
 ### Boot Table
 - **Style:** white rows, a Dashboard Canvas header, an antialiased 8px outer boundary, and a full-row selection model.
+- **Columns:** boot system, partition, saved purpose remark, and written state.
 - **State:** the default system receives written status; the selected target eases into the pale-indigo wash.
+
+### Remarks
+- **Entry point:** `编辑备注` button or double-clicking a boot row.
+- **Storage:** current-user registry under `Software\DualBootSwitcher\BootRemarks`, keyed by the BCD identifier.
+- **Safety:** remarks never call `bcdedit`; only the explicit default/restart actions modify BCD.
 
 ### Current Default Surface
 - **Style:** a white 8px-radius surface on the slate canvas.
@@ -140,7 +146,7 @@ Depth is created with `#F8FAFC` behind white surfaces and one-pixel `#E2E8F0` bo
 - **Do** use the exact five-color reference palette as the visual anchor.
 - **Do** keep at least 28px outer spacing and one clear primary action.
 - **Do** pair indigo state color with written labels such as `当前默认` and `可切换`.
-- **Do** keep the embedded monitor-and-cog mark synchronized with the current palette.
+- **Do** keep the embedded user-provided dual-boot mark at a stable 42px title-bar size with transparent corners.
 - **Do** reserve motion for feedback and state continuity.
 
 ### Don't:

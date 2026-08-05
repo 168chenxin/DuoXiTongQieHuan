@@ -14,6 +14,7 @@ namespace DualBootSwitcher
         private readonly AnimatedLabel actionStatusLabel;
         private readonly ToolTip interfaceToolTip;
         private readonly AnimatedButton refreshButton;
+        private readonly AnimatedButton editRemarkButton;
         private readonly AnimatedButton setDefaultButton;
         private readonly AnimatedButton setDefaultAndRestartButton;
         private Icon applicationIcon;
@@ -111,6 +112,7 @@ namespace DualBootSwitcher
             bootEntriesGrid.Location = new Point(28, 240);
             bootEntriesGrid.Size = new Size(724, 126);
             bootEntriesGrid.SelectionChanged += OnSelectedEntryChanged;
+            bootEntriesGrid.CellDoubleClick += OnBootEntryDoubleClick;
 
             var divider = new Panel
             {
@@ -136,6 +138,11 @@ namespace DualBootSwitcher
             refreshButton.Location = new Point(28, 426);
             refreshButton.Click += delegate { LoadBootEntries(); };
 
+            editRemarkButton = CreateButton("编辑备注", 116, false);
+            editRemarkButton.Location = new Point(162, 426);
+            editRemarkButton.Click += delegate { EditSelectedRemark(); };
+            interfaceToolTip.SetToolTip(editRemarkButton, "为选中的启动系统设置用途备注");
+
             setDefaultButton = CreateButton("仅设为默认", 132, false);
             setDefaultButton.Location = new Point(430, 426);
             setDefaultButton.Click += delegate { SetDefault(false); };
@@ -151,6 +158,7 @@ namespace DualBootSwitcher
             Controls.Add(divider);
             Controls.Add(actionStatusLabel);
             Controls.Add(refreshButton);
+            Controls.Add(editRemarkButton);
             Controls.Add(setDefaultButton);
             Controls.Add(setDefaultAndRestartButton);
 
@@ -314,14 +322,21 @@ namespace DualBootSwitcher
                 HeaderText = "启动系统",
                 Name = "system",
                 SortMode = DataGridViewColumnSortMode.NotSortable,
-                Width = 330
+                Width = 260
             });
             grid.Columns.Add(new DataGridViewTextBoxColumn
             {
                 HeaderText = "分区",
                 Name = "device",
                 SortMode = DataGridViewColumnSortMode.NotSortable,
-                Width = 150
+                Width = 110
+            });
+            grid.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                HeaderText = "备注",
+                Name = "remark",
+                SortMode = DataGridViewColumnSortMode.NotSortable,
+                Width = 210
             });
             grid.Columns.Add(new DataGridViewTextBoxColumn
             {
@@ -367,19 +382,26 @@ namespace DualBootSwitcher
 
                 foreach (BootEntry entry in bootEntries)
                 {
+                    string remark = GetEntryRemark(entry);
                     int rowIndex = bootEntriesGrid.Rows.Add(
                         entry.Description,
                         entry.Device,
+                        GetRemarkDisplay(remark),
                         entry.IsDefault ? "当前默认" : "可切换");
                     DataGridViewRow row = bootEntriesGrid.Rows[rowIndex];
                     row.Tag = entry;
                     row.Cells[0].ToolTipText = entry.Description;
                     row.Cells[1].ToolTipText = entry.Device;
+                    row.Cells[2].ToolTipText = remark;
+                    if (string.IsNullOrWhiteSpace(remark))
+                    {
+                        row.Cells[2].Style.ForeColor = UiTheme.Muted;
+                    }
 
                     if (entry.IsDefault)
                     {
                         row.DefaultCellStyle.Font = new Font("Segoe UI", 10F, FontStyle.Bold, GraphicsUnit.Point);
-                        row.Cells[2].Style.ForeColor = UiTheme.Primary;
+                        row.Cells[3].Style.ForeColor = UiTheme.Primary;
                         defaultEntry = entry;
                     }
                     else if (firstSwitchableRow == null)
@@ -418,13 +440,16 @@ namespace DualBootSwitcher
             {
                 currentDefaultNameLabel.Text = "未识别默认系统";
                 currentDefaultDeviceLabel.Visible = false;
+                interfaceToolTip.SetToolTip(currentDefaultNameLabel, string.Empty);
                 interfaceToolTip.SetToolTip(currentDefaultDeviceLabel, string.Empty);
                 return;
             }
 
-            currentDefaultNameLabel.Text = defaultEntry.Description;
+            string displayName = GetEntryDisplayName(defaultEntry);
+            currentDefaultNameLabel.Text = displayName;
             currentDefaultDeviceLabel.Text = defaultEntry.Device;
             currentDefaultDeviceLabel.Visible = true;
+            interfaceToolTip.SetToolTip(currentDefaultNameLabel, displayName);
             interfaceToolTip.SetToolTip(currentDefaultDeviceLabel, defaultEntry.Device);
         }
 
@@ -459,9 +484,11 @@ namespace DualBootSwitcher
 
             if (selectedEntry == null)
             {
+                editRemarkButton.Enabled = false;
                 return;
             }
 
+            editRemarkButton.Enabled = true;
             actionStatusLabel.Text = selectedEntry.IsDefault
                 ? "当前系统已是默认启动项"
                 : "已选择 " + selectedEntry.Device + "，确认后将在下次启动时生效";
@@ -470,8 +497,79 @@ namespace DualBootSwitcher
 
         private void SetActionButtonsEnabled(bool enabled)
         {
+            editRemarkButton.Enabled = enabled;
             setDefaultButton.Enabled = enabled;
             setDefaultAndRestartButton.Enabled = enabled;
+        }
+
+        private void OnBootEntryDoubleClick(object sender, DataGridViewCellEventArgs eventArgs)
+        {
+            if (eventArgs.RowIndex < 0 || eventArgs.RowIndex >= bootEntriesGrid.Rows.Count)
+            {
+                return;
+            }
+
+            bootEntriesGrid.ClearSelection();
+            bootEntriesGrid.Rows[eventArgs.RowIndex].Selected = true;
+            bootEntriesGrid.CurrentCell = bootEntriesGrid.Rows[eventArgs.RowIndex].Cells[0];
+            EditSelectedRemark();
+        }
+
+        private void EditSelectedRemark()
+        {
+            BootEntry selectedEntry = GetSelectedEntry();
+            if (selectedEntry == null)
+            {
+                return;
+            }
+
+            using (var dialog = new RemarkDialog(selectedEntry.Description, GetEntryRemark(selectedEntry)))
+            {
+                if (dialog.ShowDialog(this) != DialogResult.OK)
+                {
+                    return;
+                }
+
+                try
+                {
+                    BootRemarkStore.Set(selectedEntry.Identifier, dialog.Remark);
+                    UpdateRemarkRow(selectedEntry);
+                }
+                catch (Exception exception)
+                {
+                    MessageBox.Show(
+                        exception.Message,
+                        Text,
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Error);
+                }
+            }
+        }
+
+        private void UpdateRemarkRow(BootEntry entry)
+        {
+            foreach (DataGridViewRow row in bootEntriesGrid.Rows)
+            {
+                if (row.Tag != entry)
+                {
+                    continue;
+                }
+
+                string remark = GetEntryRemark(entry);
+                row.Cells[2].Value = GetRemarkDisplay(remark);
+                row.Cells[2].ToolTipText = remark;
+                row.Cells[2].Style.ForeColor = string.IsNullOrWhiteSpace(remark)
+                    ? UiTheme.Muted
+                    : UiTheme.Ink;
+                break;
+            }
+
+            if (entry.IsDefault)
+            {
+                SetCurrentDefault(entry);
+            }
+
+            UpdateActionButtons();
         }
 
         private BootEntry GetSelectedEntry()
@@ -497,7 +595,7 @@ namespace DualBootSwitcher
                 ? "\r\n\r\n当前打开的程序会因重启而关闭，请先保存正在进行的工作。"
                 : "\r\n\r\n此操作只修改下次启动默认项，不会立即重启电脑。";
             DialogResult confirmation = MessageBox.Show(
-                "确认将“" + selectedEntry.DisplayName + "”" + action + "吗？" + consequence,
+                "确认将“" + GetEntryConfirmationName(selectedEntry) + "”" + action + "吗？" + consequence,
                 "确认切换",
                 MessageBoxButtons.OKCancel,
                 MessageBoxIcon.Warning,
@@ -524,7 +622,7 @@ namespace DualBootSwitcher
 
                 LoadBootEntries();
                 MessageBox.Show(
-                    "已将“" + selectedEntry.DisplayName + "”设为默认启动系统。",
+                    "已将“" + GetEntryConfirmationName(selectedEntry) + "”设为默认启动系统。",
                     Text,
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Information);
@@ -541,6 +639,32 @@ namespace DualBootSwitcher
                     MessageBoxIcon.Error);
                 UpdateActionButtons();
             }
+        }
+
+        private static string GetEntryRemark(BootEntry entry)
+        {
+            return entry == null ? string.Empty : BootRemarkStore.Get(entry.Identifier);
+        }
+
+        private static string GetRemarkDisplay(string remark)
+        {
+            return string.IsNullOrWhiteSpace(remark) ? "未设置" : remark;
+        }
+
+        private static string GetEntryDisplayName(BootEntry entry)
+        {
+            string remark = GetEntryRemark(entry);
+            return string.IsNullOrWhiteSpace(remark)
+                ? entry.Description
+                : entry.Description + " · " + remark;
+        }
+
+        private static string GetEntryConfirmationName(BootEntry entry)
+        {
+            string displayName = GetEntryDisplayName(entry);
+            return string.IsNullOrWhiteSpace(entry.Device)
+                ? displayName
+                : displayName + "（" + entry.Device + "）";
         }
     }
 }
