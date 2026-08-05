@@ -7,7 +7,13 @@
 - 适用于 Windows 10 和 Windows 11，系统自带的 .NET Framework 4.x 即可运行，不需要安装 SDK 或额外组件。
 - 分发给其他电脑时，使用 `release\DualBootSwitcher-portable.zip`；解压后双击其中的 `DualBootSwitcher.exe`。
 - 程序图标已嵌入 exe，运行时不依赖旁边的图片或资源文件。
+- 圆角控件使用抗锯齿绘制；悬停、按压、选择和状态文字采用短缓动，并自动跟随 Windows 的界面动画设置。
 - 当前便携版未使用商业代码签名证书；从网络下载后若 Windows SmartScreen 提示，请先确认文件来源再选择运行。
+
+## 管理员权限
+
+- 程序清单使用 `requireAdministrator`：当前进程未提权时，Windows 会在启动时自动显示 UAC；如果已经拥有提升后的管理员令牌，则直接进入软件，不会重复申请。
+- 程序还包含 `runas` 代码兜底，用于清单未被宿主正确应用的情况。用户取消 UAC 后，软件不会修改任何引导设置。
 
 ## 使用方法
 
@@ -41,3 +47,7 @@
 ## 图标来源
 
 应用图标改编自开源 Lucide Icons 的 `monitor-cog` 图标。完整许可见 `assets\THIRD_PARTY_NOTICES.md`。
+
+## UI 配色来源
+
+界面使用 [颜色代码表 ui-modern-dash](https://www.ysdaima.com/palettes/ui-modern-dash/) 的 SaaS Dashboard 配色：`#6366F1`、`#818CF8`、`#E0E7FF`、`#F8FAFC`、`#1E293B`。

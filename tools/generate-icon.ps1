@@ -37,18 +37,18 @@ function New-ApplicationBitmap {
 
     try {
         $backgroundPath = New-RoundedRectanglePath (18 * $scale) (18 * $scale) (220 * $scale) (220 * $scale) (50 * $scale)
-        $backgroundBrush = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::FromArgb(70, 107, 63))
+        $backgroundBrush = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::FromArgb(99, 102, 241))
         $graphics.FillPath($backgroundBrush, $backgroundPath)
 
         $screenOuter = New-RoundedRectanglePath (40 * $scale) (79 * $scale) (133 * $scale) (76 * $scale) (12 * $scale)
-        $screenBrush = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::FromArgb(247, 251, 246))
+        $screenBrush = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::FromArgb(255, 255, 255))
         $graphics.FillPath($screenBrush, $screenOuter)
 
         $screenInner = New-RoundedRectanglePath (51 * $scale) (90 * $scale) (111 * $scale) (54 * $scale) (5 * $scale)
-        $screenInnerBrush = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::FromArgb(35, 55, 39))
+        $screenInnerBrush = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::FromArgb(30, 41, 59))
         $graphics.FillPath($screenInnerBrush, $screenInner)
 
-        $standPen = New-Object System.Drawing.Pen([System.Drawing.Color]::FromArgb(247, 251, 246), (10 * $scale))
+        $standPen = New-Object System.Drawing.Pen([System.Drawing.Color]::FromArgb(255, 255, 255), (10 * $scale))
         $standPen.StartCap = [System.Drawing.Drawing2D.LineCap]::Round
         $standPen.EndCap = [System.Drawing.Drawing2D.LineCap]::Round
         $graphics.DrawLine($standPen, (106 * $scale), (156 * $scale), (106 * $scale), (180 * $scale))
@@ -56,7 +56,7 @@ function New-ApplicationBitmap {
 
         $gearCenterX = 184 * $scale
         $gearCenterY = 68 * $scale
-        $gearPen = New-Object System.Drawing.Pen([System.Drawing.Color]::FromArgb(119, 200, 188), (13 * $scale))
+        $gearPen = New-Object System.Drawing.Pen([System.Drawing.Color]::FromArgb(129, 140, 248), (13 * $scale))
         $gearPen.StartCap = [System.Drawing.Drawing2D.LineCap]::Round
         $gearPen.EndCap = [System.Drawing.Drawing2D.LineCap]::Round
 
@@ -72,9 +72,9 @@ function New-ApplicationBitmap {
                 $gearCenterY + ([Math]::Sin($angle) * $outerRadius))
         }
 
-        $gearBrush = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::FromArgb(119, 200, 188))
+        $gearBrush = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::FromArgb(129, 140, 248))
         $graphics.FillEllipse($gearBrush, $gearCenterX - (32 * $scale), $gearCenterY - (32 * $scale), (64 * $scale), (64 * $scale))
-        $gearCenterBrush = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::FromArgb(70, 107, 63))
+        $gearCenterBrush = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::FromArgb(99, 102, 241))
         $graphics.FillEllipse($gearCenterBrush, $gearCenterX - (13 * $scale), $gearCenterY - (13 * $scale), (26 * $scale), (26 * $scale))
     }
     finally {

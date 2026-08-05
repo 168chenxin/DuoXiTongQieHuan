@@ -7,15 +7,15 @@ namespace DualBootSwitcher
 {
     internal sealed class MainForm : Form
     {
-        private readonly DataGridView bootEntriesGrid;
-        private readonly Label currentDefaultNameLabel;
-        private readonly Label currentDefaultDeviceLabel;
-        private readonly Label entryCountLabel;
-        private readonly Label actionStatusLabel;
+        private readonly AnimatedDataGridView bootEntriesGrid;
+        private readonly AnimatedLabel currentDefaultNameLabel;
+        private readonly RoundedLabel currentDefaultDeviceLabel;
+        private readonly AnimatedLabel entryCountLabel;
+        private readonly AnimatedLabel actionStatusLabel;
         private readonly ToolTip interfaceToolTip;
-        private readonly Button refreshButton;
-        private readonly Button setDefaultButton;
-        private readonly Button setDefaultAndRestartButton;
+        private readonly AnimatedButton refreshButton;
+        private readonly AnimatedButton setDefaultButton;
+        private readonly AnimatedButton setDefaultAndRestartButton;
         private Icon applicationIcon;
 
         public MainForm()
@@ -39,9 +39,10 @@ namespace DualBootSwitcher
             };
             CreateHeader();
 
-            var defaultBand = new Panel
+            var defaultBand = new RoundedPanel
             {
-                BackColor = UiTheme.Surface,
+                FillColor = UiTheme.Surface,
+                CornerRadius = UiTheme.SurfaceCornerRadius,
                 Location = new Point(28, 106),
                 Size = new Size(724, 86)
             };
@@ -55,10 +56,11 @@ namespace DualBootSwitcher
                 Text = "当前默认启动"
             };
 
-            currentDefaultNameLabel = new Label
+            currentDefaultNameLabel = new AnimatedLabel
             {
                 AutoEllipsis = true,
                 AutoSize = false,
+                BackdropColor = UiTheme.Surface,
                 Font = new Font("Segoe UI", 15F, FontStyle.Bold, GraphicsUnit.Point),
                 ForeColor = UiTheme.Ink,
                 Location = new Point(18, 35),
@@ -66,11 +68,13 @@ namespace DualBootSwitcher
                 Text = "正在读取启动项..."
             };
 
-            currentDefaultDeviceLabel = new Label
+            currentDefaultDeviceLabel = new RoundedLabel
             {
                 AutoSize = false,
-                BackColor = UiTheme.AccentSoft,
                 AutoEllipsis = true,
+                BackdropColor = UiTheme.Surface,
+                CornerRadius = UiTheme.BadgeCornerRadius,
+                FillColor = UiTheme.AccentSoft,
                 Font = new Font("Segoe UI", 10F, FontStyle.Bold, GraphicsUnit.Point),
                 ForeColor = UiTheme.Accent,
                 Location = new Point(564, 27),
@@ -92,9 +96,10 @@ namespace DualBootSwitcher
                 Text = "启动菜单"
             };
 
-            entryCountLabel = new Label
+            entryCountLabel = new AnimatedLabel
             {
                 AutoSize = false,
+                BackdropColor = UiTheme.Canvas,
                 Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point),
                 ForeColor = UiTheme.Muted,
                 Location = new Point(590, 215),
@@ -114,10 +119,11 @@ namespace DualBootSwitcher
                 Size = new Size(724, 1)
             };
 
-            actionStatusLabel = new Label
+            actionStatusLabel = new AnimatedLabel
             {
                 AutoEllipsis = true,
                 AutoSize = false,
+                BackdropColor = UiTheme.Canvas,
                 Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point),
                 ForeColor = UiTheme.Muted,
                 Location = new Point(28, 401),
@@ -202,7 +208,7 @@ namespace DualBootSwitcher
             {
                 AutoSize = true,
                 Font = new Font("Segoe UI", 13F, FontStyle.Bold, GraphicsUnit.Point),
-                ForeColor = UiTheme.Canvas,
+                ForeColor = UiTheme.Ink,
                 Location = new Point(84, 18),
                 Text = "双系统快速切换"
             };
@@ -216,22 +222,25 @@ namespace DualBootSwitcher
                 Text = "WINDOWS BOOT MENU"
             };
 
-            var bcdLabel = new Label
+            var bcdLabel = new RoundedLabel
             {
                 AutoSize = false,
+                BackdropColor = UiTheme.Header,
+                CornerRadius = UiTheme.BadgeCornerRadius,
+                FillColor = UiTheme.AccentSoft,
                 Font = new Font("Segoe UI", 8.5F, FontStyle.Bold, GraphicsUnit.Point),
-                ForeColor = UiTheme.HeaderMuted,
-                Location = new Point(618, 30),
-                Size = new Size(134, 20),
-                Text = "WINDOWS BCD",
-                TextAlign = ContentAlignment.MiddleRight
+                ForeColor = UiTheme.Accent,
+                Location = new Point(630, 24),
+                Size = new Size(122, 30),
+                Text = "管理员模式",
+                TextAlign = ContentAlignment.MiddleCenter
             };
 
             var accentLine = new Panel
             {
-                BackColor = UiTheme.Accent,
-                Location = new Point(0, 75),
-                Size = new Size(780, 3)
+                BackColor = UiTheme.Border,
+                Location = new Point(0, 77),
+                Size = new Size(780, 1)
             };
 
             header.Controls.Add(logo);
@@ -242,22 +251,24 @@ namespace DualBootSwitcher
             Controls.Add(header);
         }
 
-        private static DataGridView CreateBootEntriesGrid()
+        private static AnimatedDataGridView CreateBootEntriesGrid()
         {
-            var grid = new DataGridView
+            var grid = new AnimatedDataGridView
             {
                 AllowUserToAddRows = false,
                 AllowUserToDeleteRows = false,
                 AllowUserToResizeColumns = false,
                 AllowUserToResizeRows = false,
                 AutoGenerateColumns = false,
-                BackgroundColor = UiTheme.Canvas,
-                BorderStyle = BorderStyle.FixedSingle,
+                BackgroundColor = UiTheme.Surface,
+                BackdropColor = UiTheme.Canvas,
+                BorderStyle = BorderStyle.None,
                 CellBorderStyle = DataGridViewCellBorderStyle.SingleHorizontal,
                 ColumnHeadersBorderStyle = DataGridViewHeaderBorderStyle.Single,
                 ColumnHeadersHeight = 32,
                 ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing,
                 EnableHeadersVisualStyles = false,
+                GridColor = UiTheme.Border,
                 MultiSelect = false,
                 ReadOnly = true,
                 RowHeadersVisible = false,
@@ -272,18 +283,18 @@ namespace DualBootSwitcher
             grid.ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle
             {
                 Alignment = DataGridViewContentAlignment.MiddleLeft,
-                BackColor = UiTheme.Surface,
+                BackColor = UiTheme.Canvas,
                 Font = new Font("Segoe UI", 8.5F, FontStyle.Bold, GraphicsUnit.Point),
                 ForeColor = UiTheme.Muted,
                 Padding = new Padding(10, 0, 0, 0),
-                SelectionBackColor = UiTheme.Surface,
+                SelectionBackColor = UiTheme.Canvas,
                 SelectionForeColor = UiTheme.Muted
             };
 
             grid.DefaultCellStyle = new DataGridViewCellStyle
             {
                 Alignment = DataGridViewContentAlignment.MiddleLeft,
-                BackColor = UiTheme.Canvas,
+                BackColor = UiTheme.Surface,
                 Font = new Font("Segoe UI", 10F, FontStyle.Regular, GraphicsUnit.Point),
                 ForeColor = UiTheme.Ink,
                 Padding = new Padding(10, 0, 0, 0),
@@ -293,7 +304,7 @@ namespace DualBootSwitcher
 
             grid.AlternatingRowsDefaultCellStyle = new DataGridViewCellStyle
             {
-                BackColor = Color.FromArgb(251, 252, 251),
+                BackColor = UiTheme.Canvas,
                 SelectionBackColor = UiTheme.Selection,
                 SelectionForeColor = UiTheme.Ink
             };
@@ -323,23 +334,14 @@ namespace DualBootSwitcher
             return grid;
         }
 
-        private static Button CreateButton(string text, int width, bool isPrimary)
+        private static AnimatedButton CreateButton(string text, int width, bool isPrimary)
         {
-            var button = new Button
+            var button = new AnimatedButton(isPrimary)
             {
-                BackColor = isPrimary ? UiTheme.Primary : UiTheme.Canvas,
-                Cursor = Cursors.Hand,
-                FlatStyle = FlatStyle.Flat,
                 Font = new Font("Segoe UI", 9F, FontStyle.Bold, GraphicsUnit.Point),
-                ForeColor = isPrimary ? UiTheme.Canvas : UiTheme.Ink,
                 Size = new Size(width, 40),
-                Text = text,
-                UseVisualStyleBackColor = false
+                Text = text
             };
-
-            button.FlatAppearance.BorderColor = isPrimary ? UiTheme.Primary : UiTheme.Border;
-            button.FlatAppearance.MouseDownBackColor = isPrimary ? UiTheme.PrimaryHover : UiTheme.Surface;
-            button.FlatAppearance.MouseOverBackColor = isPrimary ? UiTheme.PrimaryHover : UiTheme.Surface;
             return button;
         }
 
@@ -462,35 +464,14 @@ namespace DualBootSwitcher
 
             actionStatusLabel.Text = selectedEntry.IsDefault
                 ? "当前系统已是默认启动项"
-                : "已选择 " + selectedEntry.Device + "，将在下次启动时生效";
+                : "已选择 " + selectedEntry.Device + "，确认后将在下次启动时生效";
             interfaceToolTip.SetToolTip(actionStatusLabel, actionStatusLabel.Text);
         }
 
         private void SetActionButtonsEnabled(bool enabled)
         {
-            SetActionButtonState(setDefaultButton, enabled, false);
-            SetActionButtonState(setDefaultAndRestartButton, enabled, true);
-        }
-
-        private static void SetActionButtonState(Button button, bool enabled, bool isPrimary)
-        {
-            button.Enabled = enabled;
-
-            if (enabled)
-            {
-                button.BackColor = isPrimary ? UiTheme.Primary : UiTheme.Canvas;
-                button.ForeColor = isPrimary ? UiTheme.Canvas : UiTheme.Ink;
-                button.FlatAppearance.BorderColor = isPrimary ? UiTheme.Primary : UiTheme.Border;
-                button.FlatAppearance.MouseDownBackColor = isPrimary ? UiTheme.PrimaryHover : UiTheme.Surface;
-                button.FlatAppearance.MouseOverBackColor = isPrimary ? UiTheme.PrimaryHover : UiTheme.Surface;
-                return;
-            }
-
-            button.BackColor = UiTheme.Disabled;
-            button.ForeColor = UiTheme.DisabledText;
-            button.FlatAppearance.BorderColor = UiTheme.Border;
-            button.FlatAppearance.MouseDownBackColor = UiTheme.Disabled;
-            button.FlatAppearance.MouseOverBackColor = UiTheme.Disabled;
+            setDefaultButton.Enabled = enabled;
+            setDefaultAndRestartButton.Enabled = enabled;
         }
 
         private BootEntry GetSelectedEntry()
