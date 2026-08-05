@@ -1,6 +1,7 @@
 param(
     [Parameter(Mandatory = $true)]
-    [string]$OutputPath
+    [string]$OutputPath,
+    [string]$PngOutputPath
 )
 
 $ErrorActionPreference = 'Stop'
@@ -101,6 +102,7 @@ New-Item -ItemType Directory -Force -Path $outputDirectory | Out-Null
 
 $sizes = @(16, 24, 32, 48, 64, 128, 256)
 $payloads = @()
+$resolvedPngOutputPath = $null
 
 try {
     foreach ($size in $sizes) {
@@ -116,6 +118,20 @@ try {
         finally {
             $memory.Dispose()
             $bitmap.Dispose()
+        }
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace($PngOutputPath)) {
+        $resolvedPngOutputPath = [System.IO.Path]::GetFullPath($PngOutputPath)
+        $pngOutputDirectory = Split-Path -Parent $resolvedPngOutputPath
+        New-Item -ItemType Directory -Force -Path $pngOutputDirectory | Out-Null
+
+        $embeddedBitmap = New-ApplicationBitmap 256
+        try {
+            $embeddedBitmap.Save($resolvedPngOutputPath, [System.Drawing.Imaging.ImageFormat]::Png)
+        }
+        finally {
+            $embeddedBitmap.Dispose()
         }
     }
 }
@@ -155,3 +171,6 @@ finally {
 }
 
 Write-Host "Generated: $resolvedOutputPath"
+if ($resolvedPngOutputPath) {
+    Write-Host "Generated: $resolvedPngOutputPath"
+}

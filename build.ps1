@@ -17,7 +17,8 @@ New-Item -ItemType Directory -Force -Path $outputDirectory | Out-Null
 New-Item -ItemType Directory -Force -Path $buildDirectory | Out-Null
 
 $iconPath = Join-Path $buildDirectory 'DualBootSwitcher.ico'
-& (Join-Path $root 'tools\generate-icon.ps1') -OutputPath $iconPath
+$embeddedLogoPath = Join-Path $buildDirectory 'DualBootSwitcher-logo.png'
+& (Join-Path $root 'tools\generate-icon.ps1') -OutputPath $iconPath -PngOutputPath $embeddedLogoPath
 
 $executablePath = Join-Path $outputDirectory 'DualBootSwitcher.exe'
 
@@ -25,6 +26,7 @@ $executablePath = Join-Path $outputDirectory 'DualBootSwitcher.exe'
     "/out:$executablePath" `
     "/win32icon:$iconPath" `
     "/win32manifest:$root\src\app.manifest" `
+    "/resource:$embeddedLogoPath,DualBootSwitcher.Logo.png" `
     /r:System.dll /r:System.Drawing.dll /r:System.Windows.Forms.dll `
     "$root\src\AssemblyInfo.cs" `
     "$root\src\BcdModels.cs" `

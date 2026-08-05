@@ -99,6 +99,64 @@ namespace DualBootSwitcher
         }
     }
 
+    internal sealed class HighQualityImageControl : Control
+    {
+        private Image image;
+
+        public HighQualityImageControl()
+        {
+            SetStyle(
+                ControlStyles.AllPaintingInWmPaint |
+                ControlStyles.OptimizedDoubleBuffer |
+                ControlStyles.ResizeRedraw |
+                ControlStyles.UserPaint,
+                true);
+        }
+
+        public Image Image
+        {
+            get { return image; }
+            set
+            {
+                image = value;
+                Invalidate();
+            }
+        }
+
+        protected override void OnPaintBackground(PaintEventArgs eventArgs)
+        {
+            eventArgs.Graphics.Clear(BackColor);
+        }
+
+        protected override void OnPaint(PaintEventArgs eventArgs)
+        {
+            if (image == null || ClientSize.Width <= 0 || ClientSize.Height <= 0)
+            {
+                return;
+            }
+
+            eventArgs.Graphics.CompositingQuality = CompositingQuality.HighQuality;
+            eventArgs.Graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
+            eventArgs.Graphics.PixelOffsetMode = PixelOffsetMode.HighQuality;
+
+            float imageAspect = image.Width / (float)image.Height;
+            float controlAspect = ClientSize.Width / (float)ClientSize.Height;
+            Rectangle destination;
+            if (imageAspect > controlAspect)
+            {
+                int height = (int)Math.Round(ClientSize.Width / imageAspect);
+                destination = new Rectangle(0, (ClientSize.Height - height) / 2, ClientSize.Width, height);
+            }
+            else
+            {
+                int width = (int)Math.Round(ClientSize.Height * imageAspect);
+                destination = new Rectangle((ClientSize.Width - width) / 2, 0, width, ClientSize.Height);
+            }
+
+            eventArgs.Graphics.DrawImage(image, destination);
+        }
+    }
+
     internal sealed class RoundedPanel : Panel
     {
         private Color fillColor = UiTheme.Surface;

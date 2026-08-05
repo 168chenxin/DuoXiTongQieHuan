@@ -33,7 +33,7 @@ typography:
   label:
     fontFamily: "Segoe UI, Microsoft YaHei UI, sans-serif"
     fontSize: "12px"
-    fontWeight: 600
+    fontWeight: 700
     lineHeight: 1.2
 rounded:
   surface: "8px"
@@ -69,7 +69,7 @@ components:
 
 The visual source of truth is the [ui-modern-dash palette](https://www.ysdaima.com/palettes/ui-modern-dash/). Its light slate canvas, white surfaces, indigo actions, pale-indigo selection states, and deep slate typography are mapped onto a compact Windows control surface.
 
-The utility keeps one status surface and one scan-friendly boot table. It borrows the reference's palette, spacing, light header, and restrained rounding without copying its marketing preview or dashboard card density. Rounded surfaces use antialiased GDI+ paths instead of hard control-region clipping. The user-provided dual-boot mark is embedded into the executable and reused in the title bar.
+The utility keeps one status surface and one scan-friendly boot table. It borrows the reference's palette, spacing, light header, and restrained rounding without copying its marketing preview or dashboard card density. Rounded surfaces use antialiased GDI+ paths instead of hard control-region clipping. The user-provided dual-boot mark is embedded as both a multi-size ICO and a cropped 256px PNG for sharp title-bar rendering.
 
 ## 2. Colors
 
@@ -105,7 +105,11 @@ The five reference colors are `#6366F1`, `#818CF8`, `#E0E7FF`, `#F8FAFC`, and `#
 - **Headline** (700, 20px, 1.2): current default system name.
 - **Title** (700, 17px, 1.2): application identity in the header.
 - **Body** (400, 13px, 1.4): boot-entry data and confirmation text.
-- **Label** (600, 12px, 1.2): table headers, status labels, and action state.
+- **Label** (700, 12px, 1.2): table headers, status labels, and action state.
+
+### Weight Roles
+- **Bold:** application title, current default, section headings, system name, partition, status, and the primary restart action.
+- **Regular:** remarks, metadata, helper text, refresh, edit, cancel, and secondary actions.
 
 ## 4. Elevation
 
@@ -115,13 +119,14 @@ Depth is created with `#F8FAFC` behind white surfaces and one-pixel `#E2E8F0` bo
 
 ### Buttons
 - **Shape:** antialiased 10px logical corners, scaled with the drawing DPI, and a fixed 40px logical height.
-- **Primary:** Accessible Action Indigo with white text, Hover Indigo on hover, and Pressed Indigo on press.
-- **Secondary:** white surface, Slate Border, and Deep Slate text.
+- **Primary:** bold white text on Accessible Action Indigo, Hover Indigo on hover, and Pressed Indigo on press.
+- **Secondary:** regular-weight Deep Slate text on a white surface with Slate Border.
 - **Disabled:** pale slate background with written disabled state.
 
 ### Boot Table
 - **Style:** white rows, a Dashboard Canvas header, an antialiased 8px outer boundary, and a full-row selection model.
 - **Columns:** boot system, partition, saved purpose remark, and written state.
+- **Weight:** system, partition, and status are bold for scanning; remarks stay regular to preserve hierarchy.
 - **State:** the default system receives written status; the selected target eases into the pale-indigo wash.
 
 ### Remarks
@@ -146,7 +151,7 @@ Depth is created with `#F8FAFC` behind white surfaces and one-pixel `#E2E8F0` bo
 - **Do** use the exact five-color reference palette as the visual anchor.
 - **Do** keep at least 28px outer spacing and one clear primary action.
 - **Do** pair indigo state color with written labels such as `当前默认` and `可切换`.
-- **Do** keep the embedded user-provided dual-boot mark at a stable 42px title-bar size with transparent corners.
+- **Do** keep the embedded user-provided dual-boot mark at a stable 46px title-bar size with transparent corners.
 - **Do** reserve motion for feedback and state continuity.
 
 ### Don't:

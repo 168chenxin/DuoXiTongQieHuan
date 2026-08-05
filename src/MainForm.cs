@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.IO;
+using System.Reflection;
 using System.Windows.Forms;
 
 namespace DualBootSwitcher
@@ -18,6 +20,7 @@ namespace DualBootSwitcher
         private readonly AnimatedButton setDefaultButton;
         private readonly AnimatedButton setDefaultAndRestartButton;
         private Icon applicationIcon;
+        private Image applicationLogo;
 
         public MainForm()
         {
@@ -30,7 +33,7 @@ namespace DualBootSwitcher
             Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
             AutoScaleMode = AutoScaleMode.Dpi;
 
-            LoadApplicationIcon();
+            LoadApplicationAssets();
             interfaceToolTip = new ToolTip
             {
                 AutoPopDelay = 10000,
@@ -128,7 +131,7 @@ namespace DualBootSwitcher
                 AutoEllipsis = true,
                 AutoSize = false,
                 BackdropColor = UiTheme.Canvas,
-                Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point),
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold, GraphicsUnit.Point),
                 ForeColor = UiTheme.Muted,
                 Location = new Point(28, 401),
                 Size = new Size(338, 24),
@@ -179,6 +182,11 @@ namespace DualBootSwitcher
                 applicationIcon.Dispose();
             }
 
+            if (disposing && applicationLogo != null)
+            {
+                applicationLogo.Dispose();
+            }
+
             if (disposing && interfaceToolTip != null)
             {
                 interfaceToolTip.Dispose();
@@ -187,12 +195,29 @@ namespace DualBootSwitcher
             base.Dispose(disposing);
         }
 
-        private void LoadApplicationIcon()
+        private void LoadApplicationAssets()
         {
             applicationIcon = System.Drawing.Icon.ExtractAssociatedIcon(Application.ExecutablePath);
             if (applicationIcon != null)
             {
                 Icon = applicationIcon;
+            }
+
+            using (Stream logoStream = Assembly.GetExecutingAssembly().GetManifestResourceStream(
+                "DualBootSwitcher.Logo.png"))
+            {
+                if (logoStream != null)
+                {
+                    using (Image sourceImage = Image.FromStream(logoStream))
+                    {
+                        applicationLogo = new Bitmap(sourceImage);
+                    }
+                }
+            }
+
+            if (applicationLogo == null && applicationIcon != null)
+            {
+                applicationLogo = applicationIcon.ToBitmap();
             }
         }
 
@@ -205,25 +230,20 @@ namespace DualBootSwitcher
                 Size = new Size(780, 78)
             };
 
-            var logo = new PictureBox
+            var logo = new HighQualityImageControl
             {
                 BackColor = UiTheme.Header,
-                Location = new Point(28, 18),
-                Size = new Size(42, 42),
-                SizeMode = PictureBoxSizeMode.Zoom
+                Image = applicationLogo,
+                Location = new Point(28, 16),
+                Size = new Size(46, 46)
             };
-
-            if (applicationIcon != null)
-            {
-                logo.Image = applicationIcon.ToBitmap();
-            }
 
             var title = new Label
             {
                 AutoSize = true,
                 Font = new Font("Segoe UI", 13F, FontStyle.Bold, GraphicsUnit.Point),
                 ForeColor = UiTheme.Ink,
-                Location = new Point(84, 18),
+                Location = new Point(88, 18),
                 Text = "双系统快速切换"
             };
 
@@ -232,7 +252,7 @@ namespace DualBootSwitcher
                 AutoSize = true,
                 Font = new Font("Segoe UI", 8.5F, FontStyle.Regular, GraphicsUnit.Point),
                 ForeColor = UiTheme.HeaderMuted,
-                Location = new Point(86, 47),
+                Location = new Point(90, 47),
                 Text = "WINDOWS BOOT MENU"
             };
 
@@ -325,6 +345,10 @@ namespace DualBootSwitcher
 
             grid.Columns.Add(new DataGridViewTextBoxColumn
             {
+                DefaultCellStyle = new DataGridViewCellStyle
+                {
+                    Font = new Font("Segoe UI", 10F, FontStyle.Bold, GraphicsUnit.Point)
+                },
                 HeaderText = "启动系统",
                 Name = "system",
                 SortMode = DataGridViewColumnSortMode.NotSortable,
@@ -332,6 +356,10 @@ namespace DualBootSwitcher
             });
             grid.Columns.Add(new DataGridViewTextBoxColumn
             {
+                DefaultCellStyle = new DataGridViewCellStyle
+                {
+                    Font = new Font("Segoe UI", 10F, FontStyle.Bold, GraphicsUnit.Point)
+                },
                 HeaderText = "分区",
                 Name = "device",
                 SortMode = DataGridViewColumnSortMode.NotSortable,
@@ -347,6 +375,10 @@ namespace DualBootSwitcher
             grid.Columns.Add(new DataGridViewTextBoxColumn
             {
                 AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill,
+                DefaultCellStyle = new DataGridViewCellStyle
+                {
+                    Font = new Font("Segoe UI", 9F, FontStyle.Bold, GraphicsUnit.Point)
+                },
                 HeaderText = "状态",
                 Name = "status",
                 SortMode = DataGridViewColumnSortMode.NotSortable
@@ -359,7 +391,11 @@ namespace DualBootSwitcher
         {
             var button = new AnimatedButton(isPrimary)
             {
-                Font = new Font("Segoe UI", 9F, FontStyle.Bold, GraphicsUnit.Point),
+                Font = new Font(
+                    "Segoe UI",
+                    9F,
+                    isPrimary ? FontStyle.Bold : FontStyle.Regular,
+                    GraphicsUnit.Point),
                 Size = new Size(width, 40),
                 Text = text
             };
@@ -406,7 +442,6 @@ namespace DualBootSwitcher
 
                     if (entry.IsDefault)
                     {
-                        row.DefaultCellStyle.Font = new Font("Segoe UI", 10F, FontStyle.Bold, GraphicsUnit.Point);
                         row.Cells[3].Style.ForeColor = UiTheme.Primary;
                         defaultEntry = entry;
                     }

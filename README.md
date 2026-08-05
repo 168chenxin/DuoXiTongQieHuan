@@ -6,7 +6,7 @@
 
 - 适用于 Windows 10 和 Windows 11，使用系统自带的 .NET Framework 4.x；不需要安装 SDK、运行库、DLL 或其他附件。
 - 直接下载并双击 `release\DualBootSwitcher.exe` 即可运行；`release\DualBootSwitcher-portable.zip` 仅用于方便分发和附带说明文件。
-- Logo 和程序图标已嵌入 exe，运行时不依赖旁边的 PNG、ICO 或资源文件。
+- Logo 和程序图标已嵌入 exe；标题区直接使用内嵌高清 PNG 绘制，不会放大低分辨率 ICO，也不依赖旁边的资源文件。
 - 圆角控件使用抗锯齿绘制；悬停、按压、选择和状态文字采用短缓动，并自动跟随 Windows 的界面动画设置。
 - 当前便携版未使用商业代码签名证书；从网络下载后若 Windows SmartScreen 提示，请先确认文件来源再选择运行。
 

@@ -66,7 +66,7 @@ namespace DualBootSwitcher
 
             var cancelButton = new AnimatedButton(false)
             {
-                Font = new Font("Segoe UI", 9F, FontStyle.Bold, GraphicsUnit.Point),
+                Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point),
                 Location = new Point(194, 154),
                 Size = new Size(102, 36),
                 Text = "取消",
