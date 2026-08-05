@@ -111,6 +111,8 @@ namespace DualBootSwitcher
             bootEntriesGrid = CreateBootEntriesGrid();
             bootEntriesGrid.Location = new Point(28, 240);
             bootEntriesGrid.Size = new Size(724, 126);
+            bootEntriesGrid.AccessibleName = "Windows 启动系统列表";
+            bootEntriesGrid.AccessibleDescription = "选择要设为下次默认启动的 Windows 系统";
             bootEntriesGrid.SelectionChanged += OnSelectedEntryChanged;
             bootEntriesGrid.CellDoubleClick += OnBootEntryDoubleClick;
 
@@ -136,19 +138,23 @@ namespace DualBootSwitcher
 
             refreshButton = CreateButton("刷新启动项", 126, false);
             refreshButton.Location = new Point(28, 426);
+            refreshButton.AccessibleName = "刷新启动项";
             refreshButton.Click += delegate { LoadBootEntries(); };
 
             editRemarkButton = CreateButton("编辑备注", 116, false);
             editRemarkButton.Location = new Point(162, 426);
+            editRemarkButton.AccessibleName = "编辑启动项备注";
             editRemarkButton.Click += delegate { EditSelectedRemark(); };
             interfaceToolTip.SetToolTip(editRemarkButton, "为选中的启动系统设置用途备注");
 
             setDefaultButton = CreateButton("仅设为默认", 132, false);
             setDefaultButton.Location = new Point(430, 426);
+            setDefaultButton.AccessibleName = "仅将选中系统设为默认";
             setDefaultButton.Click += delegate { SetDefault(false); };
 
             setDefaultAndRestartButton = CreateButton("切换并重启", 160, true);
             setDefaultAndRestartButton.Location = new Point(592, 426);
+            setDefaultAndRestartButton.AccessibleName = "将选中系统设为默认并重启";
             setDefaultAndRestartButton.Click += delegate { SetDefault(true); };
 
             Controls.Add(defaultBand);
@@ -480,15 +486,15 @@ namespace DualBootSwitcher
         {
             BootEntry selectedEntry = GetSelectedEntry();
             bool canSetDefault = selectedEntry != null && !selectedEntry.IsDefault;
-            SetActionButtonsEnabled(canSetDefault);
+            setDefaultButton.Enabled = canSetDefault;
+            setDefaultAndRestartButton.Enabled = canSetDefault;
+            editRemarkButton.Enabled = selectedEntry != null;
 
             if (selectedEntry == null)
             {
-                editRemarkButton.Enabled = false;
                 return;
             }
 
-            editRemarkButton.Enabled = true;
             actionStatusLabel.Text = selectedEntry.IsDefault
                 ? "当前系统已是默认启动项"
                 : "已选择 " + selectedEntry.Device + "，确认后将在下次启动时生效";

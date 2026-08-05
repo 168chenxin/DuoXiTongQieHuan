@@ -50,6 +50,8 @@ namespace DualBootSwitcher
 
             remarkTextBox = new TextBox
             {
+                AccessibleName = "启动项备注",
+                AccessibleDescription = "输入此 Windows 启动项的用途备注",
                 BorderStyle = BorderStyle.FixedSingle,
                 Font = new Font("Segoe UI", 10F, FontStyle.Regular, GraphicsUnit.Point),
                 Location = new Point(18, 70),
