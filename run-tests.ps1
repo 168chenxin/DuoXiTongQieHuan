@@ -20,6 +20,7 @@ $testExecutable = Join-Path $outputDirectory 'BcdParserTests.exe'
     "$root\src\BcdModels.cs" `
     "$root\src\BcdParser.cs" `
     "$root\src\BcdService.cs" `
+    "$root\src\BootTimeoutWorkflow.cs" `
     "$root\tests\BcdParserTests.cs"
 
 if ($LASTEXITCODE -ne 0) {
@@ -84,3 +85,5 @@ if ($null -eq $elevationNode -or $elevationNode.GetAttribute('level') -ne 'requi
 }
 
 Write-Host 'Manifest elevation test passed.'
+
+Write-Host 'Boot timeout save behavior test passed.'

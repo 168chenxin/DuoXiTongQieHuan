@@ -585,46 +585,31 @@ namespace DualBootSwitcher
                 return;
             }
 
-            int requestedSeconds;
-            using (var dialog = new TimeoutDialog(currentTimeoutSeconds))
+            try
             {
-                if (dialog.ShowDialog(this) != DialogResult.OK)
+                var workflow = new BootTimeoutWorkflow(
+                    RequestBootTimeout,
+                    delegate(int seconds)
+                    {
+                        timeoutButton.Enabled = false;
+                        BcdService.SetTimeout(seconds);
+                    });
+                BootTimeoutEditResult editResult = workflow.Run(currentTimeoutSeconds);
+
+                if (editResult.Result == BootTimeoutChangeResult.Cancelled)
                 {
                     return;
                 }
 
-                requestedSeconds = dialog.TimeoutSeconds;
-            }
+                if (editResult.Result == BootTimeoutChangeResult.Unchanged)
+                {
+                    actionStatusLabel.Text = "启动等待时间没有变化";
+                    interfaceToolTip.SetToolTip(actionStatusLabel, actionStatusLabel.Text);
+                    return;
+                }
 
-            if (requestedSeconds == currentTimeoutSeconds)
-            {
-                actionStatusLabel.Text = "启动等待时间没有变化";
-                interfaceToolTip.SetToolTip(actionStatusLabel, actionStatusLabel.Text);
-                return;
-            }
-
-            string impact = requestedSeconds == 0
-                ? "0 秒会跳过系统选择，直接启动当前默认系统。"
-                : "开机时，启动菜单会等待 " + requestedSeconds + " 秒后自动进入默认系统。";
-            DialogResult confirmation = MessageBox.Show(
-                "确认将启动等待时间从 " + currentTimeoutSeconds + " 秒修改为 " +
-                requestedSeconds + " 秒吗？\r\n\r\n" + impact,
-                "确认修改启动等待时间",
-                MessageBoxButtons.OKCancel,
-                MessageBoxIcon.Warning,
-                MessageBoxDefaultButton.Button2);
-
-            if (confirmation != DialogResult.OK)
-            {
-                return;
-            }
-
-            try
-            {
-                timeoutButton.Enabled = false;
-                BcdService.SetTimeout(requestedSeconds);
-                SetTimeoutDisplay(requestedSeconds);
-                actionStatusLabel.Text = "启动等待时间已设置为 " + requestedSeconds + " 秒";
+                SetTimeoutDisplay(editResult.RequestedSeconds);
+                actionStatusLabel.Text = "启动等待时间已设置为 " + editResult.RequestedSeconds + " 秒";
                 interfaceToolTip.SetToolTip(actionStatusLabel, actionStatusLabel.Text);
             }
             catch (Exception exception)
@@ -635,6 +620,19 @@ namespace DualBootSwitcher
                     Text,
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Error);
+            }
+        }
+
+        private int? RequestBootTimeout(int currentSeconds)
+        {
+            using (var dialog = new TimeoutDialog(currentSeconds))
+            {
+                if (dialog.ShowDialog(this) != DialogResult.OK)
+                {
+                    return null;
+                }
+
+                return dialog.TimeoutSeconds;
             }
         }
 

@@ -84,7 +84,7 @@ namespace DualBootSwitcher
                 Font = new Font("Segoe UI", 8.5F, FontStyle.Regular, GraphicsUnit.Point),
                 ForeColor = UiTheme.Muted,
                 Location = new Point(18, 108),
-                Text = "0 秒会直接启动默认系统；保存前还会再次确认。"
+                Text = "注意：0 秒会跳过系统选择，直接启动默认系统。"
             };
 
             surface.Controls.Add(titleLabel);
@@ -103,19 +103,19 @@ namespace DualBootSwitcher
                 DialogResult = DialogResult.Cancel
             };
 
-            var continueButton = new AnimatedButton(true)
+            var saveButton = new AnimatedButton(true)
             {
                 Font = new Font("Segoe UI", 9F, FontStyle.Bold, GraphicsUnit.Point),
                 Location = new Point(302, 168),
                 Size = new Size(102, 36),
-                Text = "继续修改",
+                Text = "保存修改",
                 DialogResult = DialogResult.OK
             };
 
             Controls.Add(surface);
             Controls.Add(cancelButton);
-            Controls.Add(continueButton);
-            AcceptButton = continueButton;
+            Controls.Add(saveButton);
+            AcceptButton = saveButton;
             CancelButton = cancelButton;
 
             Shown += delegate

@@ -137,7 +137,7 @@ Depth is created with `#F8FAFC` behind white surfaces and one-pixel `#E2E8F0` bo
 ### Boot Timeout
 - **Display:** a compact secondary button beside the boot-entry count shows the active timeout in seconds.
 - **Input:** a numeric control accepts `0` through `999`; `0` is explicitly described as skipping system selection.
-- **Confirmation:** after leaving the numeric dialog, a second warning states the old value, new value, and effect before `bcdedit /timeout` runs.
+- **Save behavior:** the primary action saves the selected value immediately; the dialog itself keeps the `0`-second consequence visible before saving.
 - **State:** the button is disabled while BCD is loading or when the timeout cannot be read.
 
 ### Current Default Surface

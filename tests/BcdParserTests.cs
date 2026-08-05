@@ -66,6 +66,7 @@ Windows 启动管理器
             ParsesDisplayOrder();
             ParsesTimeout();
             RejectsInvalidTimeoutChanges();
+            RunsBootTimeoutSaveWorkflow();
             FiltersOutLoadersNotInTheBootMenu();
             DoesNotSelectEntriesWithoutBootMenuOrder();
             ComparesIdentifiersWithoutCaseSensitivity();
@@ -145,6 +146,38 @@ Windows 启动管理器
     {
         AssertThrowsArgumentOutOfRange(-1);
         AssertThrowsArgumentOutOfRange(1000);
+    }
+
+    private static void RunsBootTimeoutSaveWorkflow()
+    {
+        int applyCount = 0;
+        int appliedSeconds = -1;
+        var acceptedWorkflow = new BootTimeoutWorkflow(
+            delegate(int currentSeconds) { return (int?)30; },
+            delegate(int seconds)
+            {
+                applyCount++;
+                appliedSeconds = seconds;
+            });
+
+        BootTimeoutEditResult accepted = acceptedWorkflow.Run(15);
+        AssertEqual(BootTimeoutChangeResult.Applied, accepted.Result, "Expected a changed timeout to be applied.");
+        AssertEqual(1, applyCount, "Expected a changed timeout to be written once.");
+        AssertEqual(30, appliedSeconds, "Expected the selected timeout to be written.");
+
+        var cancelledWorkflow = new BootTimeoutWorkflow(
+            delegate(int currentSeconds) { return (int?)null; },
+            delegate(int seconds) { applyCount++; });
+        BootTimeoutEditResult cancelled = cancelledWorkflow.Run(15);
+        AssertEqual(BootTimeoutChangeResult.Cancelled, cancelled.Result, "Expected cancel to skip the write.");
+        AssertEqual(1, applyCount, "Expected cancel not to write a timeout.");
+
+        var unchangedWorkflow = new BootTimeoutWorkflow(
+            delegate(int currentSeconds) { return (int?)15; },
+            delegate(int seconds) { applyCount++; });
+        BootTimeoutEditResult unchanged = unchangedWorkflow.Run(15);
+        AssertEqual(BootTimeoutChangeResult.Unchanged, unchanged.Result, "Expected the same timeout to be ignored.");
+        AssertEqual(1, applyCount, "Expected an unchanged timeout not to write.");
     }
 
     private static void AssertThrowsArgumentOutOfRange(int seconds)

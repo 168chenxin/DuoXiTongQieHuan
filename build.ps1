@@ -36,6 +36,7 @@ $executablePath = Join-Path $outputDirectory 'DualBootSwitcher.exe'
     "$root\src\UiTheme.cs" `
     "$root\src\UiControls.cs" `
     "$root\src\RemarkDialog.cs" `
+    "$root\src\BootTimeoutWorkflow.cs" `
     "$root\src\TimeoutDialog.cs" `
     "$root\src\MainForm.cs" `
     "$root\src\Program.cs"
