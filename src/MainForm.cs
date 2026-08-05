@@ -7,145 +7,394 @@ namespace DualBootSwitcher
 {
     internal sealed class MainForm : Form
     {
-        private readonly ListView bootEntriesList;
-        private readonly Label defaultSystemLabel;
+        private readonly DataGridView bootEntriesGrid;
+        private readonly Label currentDefaultNameLabel;
+        private readonly Label currentDefaultDeviceLabel;
+        private readonly Label entryCountLabel;
+        private readonly Label actionStatusLabel;
+        private readonly ToolTip interfaceToolTip;
+        private readonly Button refreshButton;
         private readonly Button setDefaultButton;
         private readonly Button setDefaultAndRestartButton;
+        private Icon applicationIcon;
+
         public MainForm()
         {
             Text = "双系统快速切换";
             StartPosition = FormStartPosition.CenterScreen;
-            ClientSize = new Size(700, 390);
+            ClientSize = new Size(780, 478);
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = false;
-            BackColor = Color.White;
-            Font = new Font("Microsoft YaHei UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+            BackColor = UiTheme.Canvas;
+            Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+            AutoScaleMode = AutoScaleMode.Dpi;
 
-            var titleLabel = new Label
+            LoadApplicationIcon();
+            interfaceToolTip = new ToolTip
             {
-                AutoSize = true,
-                Font = new Font("Microsoft YaHei UI", 16F, FontStyle.Regular, GraphicsUnit.Point),
-                ForeColor = Color.FromArgb(32, 41, 54),
-                Location = new Point(24, 22),
-                Text = "选择下次启动的系统"
+                AutoPopDelay = 10000,
+                InitialDelay = 400,
+                ReshowDelay = 100,
+                ShowAlways = true
+            };
+            CreateHeader();
+
+            var defaultBand = new Panel
+            {
+                BackColor = UiTheme.Surface,
+                Location = new Point(28, 106),
+                Size = new Size(724, 86)
             };
 
-            var descriptionLabel = new Label
+            var defaultLabel = new Label
             {
                 AutoSize = true,
-                ForeColor = Color.FromArgb(90, 100, 115),
-                Location = new Point(27, 60),
-                Text = "选择目标系统后，可直接设为默认并重启。"
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold, GraphicsUnit.Point),
+                ForeColor = UiTheme.Muted,
+                Location = new Point(18, 13),
+                Text = "当前默认启动"
             };
 
-            defaultSystemLabel = new Label
+            currentDefaultNameLabel = new Label
             {
+                AutoEllipsis = true,
                 AutoSize = false,
-                Font = new Font("Microsoft YaHei UI", 9F, FontStyle.Bold, GraphicsUnit.Point),
-                ForeColor = Color.FromArgb(39, 79, 150),
-                Location = new Point(27, 95),
-                Size = new Size(645, 24),
+                Font = new Font("Segoe UI", 15F, FontStyle.Bold, GraphicsUnit.Point),
+                ForeColor = UiTheme.Ink,
+                Location = new Point(18, 35),
+                Size = new Size(520, 32),
                 Text = "正在读取启动项..."
             };
 
-            bootEntriesList = new ListView
+            currentDefaultDeviceLabel = new Label
             {
-                Location = new Point(27, 127),
-                Size = new Size(645, 165),
-                View = View.Details,
-                FullRowSelect = true,
-                GridLines = false,
-                HeaderStyle = ColumnHeaderStyle.Nonclickable,
-                HideSelection = false,
-                MultiSelect = false,
-                UseCompatibleStateImageBehavior = false
+                AutoSize = false,
+                BackColor = UiTheme.AccentSoft,
+                AutoEllipsis = true,
+                Font = new Font("Segoe UI", 10F, FontStyle.Bold, GraphicsUnit.Point),
+                ForeColor = UiTheme.Accent,
+                Location = new Point(564, 27),
+                Size = new Size(140, 34),
+                TextAlign = ContentAlignment.MiddleCenter,
+                Visible = false
             };
-            bootEntriesList.Columns.Add("系统", 300);
-            bootEntriesList.Columns.Add("分区", 150);
-            bootEntriesList.Columns.Add("状态", 160);
-            bootEntriesList.SelectedIndexChanged += OnSelectedEntryChanged;
 
-            var refreshButton = CreateButton("刷新", 100, false);
-            refreshButton.Location = new Point(27, 322);
+            defaultBand.Controls.Add(defaultLabel);
+            defaultBand.Controls.Add(currentDefaultNameLabel);
+            defaultBand.Controls.Add(currentDefaultDeviceLabel);
+
+            var bootMenuLabel = new Label
+            {
+                AutoSize = true,
+                Font = new Font("Segoe UI", 10F, FontStyle.Bold, GraphicsUnit.Point),
+                ForeColor = UiTheme.Ink,
+                Location = new Point(28, 213),
+                Text = "启动菜单"
+            };
+
+            entryCountLabel = new Label
+            {
+                AutoSize = false,
+                Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point),
+                ForeColor = UiTheme.Muted,
+                Location = new Point(590, 215),
+                Size = new Size(162, 20),
+                TextAlign = ContentAlignment.MiddleRight
+            };
+
+            bootEntriesGrid = CreateBootEntriesGrid();
+            bootEntriesGrid.Location = new Point(28, 240);
+            bootEntriesGrid.Size = new Size(724, 126);
+            bootEntriesGrid.SelectionChanged += OnSelectedEntryChanged;
+
+            var divider = new Panel
+            {
+                BackColor = UiTheme.Border,
+                Location = new Point(28, 389),
+                Size = new Size(724, 1)
+            };
+
+            actionStatusLabel = new Label
+            {
+                AutoEllipsis = true,
+                AutoSize = false,
+                Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point),
+                ForeColor = UiTheme.Muted,
+                Location = new Point(28, 401),
+                Size = new Size(338, 24),
+                TextAlign = ContentAlignment.MiddleLeft,
+                Text = "正在读取 Windows 启动菜单..."
+            };
+
+            refreshButton = CreateButton("刷新启动项", 126, false);
+            refreshButton.Location = new Point(28, 426);
             refreshButton.Click += delegate { LoadBootEntries(); };
 
-            setDefaultButton = CreateButton("仅设为默认", 130, false);
-            setDefaultButton.Location = new Point(302, 322);
+            setDefaultButton = CreateButton("仅设为默认", 132, false);
+            setDefaultButton.Location = new Point(430, 426);
             setDefaultButton.Click += delegate { SetDefault(false); };
 
-            setDefaultAndRestartButton = CreateButton("设为默认并重启", 165, true);
-            setDefaultAndRestartButton.Location = new Point(438, 322);
+            setDefaultAndRestartButton = CreateButton("切换并重启", 160, true);
+            setDefaultAndRestartButton.Location = new Point(592, 426);
             setDefaultAndRestartButton.Click += delegate { SetDefault(true); };
 
-            Controls.Add(titleLabel);
-            Controls.Add(descriptionLabel);
-            Controls.Add(defaultSystemLabel);
-            Controls.Add(bootEntriesList);
+            Controls.Add(defaultBand);
+            Controls.Add(bootMenuLabel);
+            Controls.Add(entryCountLabel);
+            Controls.Add(bootEntriesGrid);
+            Controls.Add(divider);
+            Controls.Add(actionStatusLabel);
             Controls.Add(refreshButton);
             Controls.Add(setDefaultButton);
             Controls.Add(setDefaultAndRestartButton);
 
+            SetActionButtonsEnabled(false);
             Shown += delegate { LoadBootEntries(); };
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing && applicationIcon != null)
+            {
+                applicationIcon.Dispose();
+            }
+
+            if (disposing && interfaceToolTip != null)
+            {
+                interfaceToolTip.Dispose();
+            }
+
+            base.Dispose(disposing);
+        }
+
+        private void LoadApplicationIcon()
+        {
+            applicationIcon = System.Drawing.Icon.ExtractAssociatedIcon(Application.ExecutablePath);
+            if (applicationIcon != null)
+            {
+                Icon = applicationIcon;
+            }
+        }
+
+        private void CreateHeader()
+        {
+            var header = new Panel
+            {
+                BackColor = UiTheme.Header,
+                Location = new Point(0, 0),
+                Size = new Size(780, 78)
+            };
+
+            var logo = new PictureBox
+            {
+                BackColor = UiTheme.Header,
+                Location = new Point(28, 18),
+                Size = new Size(42, 42),
+                SizeMode = PictureBoxSizeMode.Zoom
+            };
+
+            if (applicationIcon != null)
+            {
+                logo.Image = applicationIcon.ToBitmap();
+            }
+
+            var title = new Label
+            {
+                AutoSize = true,
+                Font = new Font("Segoe UI", 13F, FontStyle.Bold, GraphicsUnit.Point),
+                ForeColor = UiTheme.Canvas,
+                Location = new Point(84, 18),
+                Text = "双系统快速切换"
+            };
+
+            var subtitle = new Label
+            {
+                AutoSize = true,
+                Font = new Font("Segoe UI", 8.5F, FontStyle.Regular, GraphicsUnit.Point),
+                ForeColor = UiTheme.HeaderMuted,
+                Location = new Point(86, 47),
+                Text = "WINDOWS BOOT MENU"
+            };
+
+            var bcdLabel = new Label
+            {
+                AutoSize = false,
+                Font = new Font("Segoe UI", 8.5F, FontStyle.Bold, GraphicsUnit.Point),
+                ForeColor = UiTheme.HeaderMuted,
+                Location = new Point(618, 30),
+                Size = new Size(134, 20),
+                Text = "WINDOWS BCD",
+                TextAlign = ContentAlignment.MiddleRight
+            };
+
+            var accentLine = new Panel
+            {
+                BackColor = UiTheme.Accent,
+                Location = new Point(0, 75),
+                Size = new Size(780, 3)
+            };
+
+            header.Controls.Add(logo);
+            header.Controls.Add(title);
+            header.Controls.Add(subtitle);
+            header.Controls.Add(bcdLabel);
+            header.Controls.Add(accentLine);
+            Controls.Add(header);
+        }
+
+        private static DataGridView CreateBootEntriesGrid()
+        {
+            var grid = new DataGridView
+            {
+                AllowUserToAddRows = false,
+                AllowUserToDeleteRows = false,
+                AllowUserToResizeColumns = false,
+                AllowUserToResizeRows = false,
+                AutoGenerateColumns = false,
+                BackgroundColor = UiTheme.Canvas,
+                BorderStyle = BorderStyle.FixedSingle,
+                CellBorderStyle = DataGridViewCellBorderStyle.SingleHorizontal,
+                ColumnHeadersBorderStyle = DataGridViewHeaderBorderStyle.Single,
+                ColumnHeadersHeight = 32,
+                ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing,
+                EnableHeadersVisualStyles = false,
+                MultiSelect = false,
+                ReadOnly = true,
+                RowHeadersVisible = false,
+                RowTemplate = { Height = 42 },
+                SelectionMode = DataGridViewSelectionMode.FullRowSelect,
+                ShowCellErrors = false,
+                ShowCellToolTips = true,
+                ShowEditingIcon = false,
+                ShowRowErrors = false
+            };
+
+            grid.ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle
+            {
+                Alignment = DataGridViewContentAlignment.MiddleLeft,
+                BackColor = UiTheme.Surface,
+                Font = new Font("Segoe UI", 8.5F, FontStyle.Bold, GraphicsUnit.Point),
+                ForeColor = UiTheme.Muted,
+                Padding = new Padding(10, 0, 0, 0),
+                SelectionBackColor = UiTheme.Surface,
+                SelectionForeColor = UiTheme.Muted
+            };
+
+            grid.DefaultCellStyle = new DataGridViewCellStyle
+            {
+                Alignment = DataGridViewContentAlignment.MiddleLeft,
+                BackColor = UiTheme.Canvas,
+                Font = new Font("Segoe UI", 10F, FontStyle.Regular, GraphicsUnit.Point),
+                ForeColor = UiTheme.Ink,
+                Padding = new Padding(10, 0, 0, 0),
+                SelectionBackColor = UiTheme.Selection,
+                SelectionForeColor = UiTheme.Ink
+            };
+
+            grid.AlternatingRowsDefaultCellStyle = new DataGridViewCellStyle
+            {
+                BackColor = Color.FromArgb(251, 252, 251),
+                SelectionBackColor = UiTheme.Selection,
+                SelectionForeColor = UiTheme.Ink
+            };
+
+            grid.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                HeaderText = "启动系统",
+                Name = "system",
+                SortMode = DataGridViewColumnSortMode.NotSortable,
+                Width = 330
+            });
+            grid.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                HeaderText = "分区",
+                Name = "device",
+                SortMode = DataGridViewColumnSortMode.NotSortable,
+                Width = 150
+            });
+            grid.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill,
+                HeaderText = "状态",
+                Name = "status",
+                SortMode = DataGridViewColumnSortMode.NotSortable
+            });
+
+            return grid;
         }
 
         private static Button CreateButton(string text, int width, bool isPrimary)
         {
             var button = new Button
             {
-                Text = text,
-                Size = new Size(width, 34),
-                FlatStyle = FlatStyle.Flat,
+                BackColor = isPrimary ? UiTheme.Primary : UiTheme.Canvas,
                 Cursor = Cursors.Hand,
-                UseVisualStyleBackColor = false,
-                BackColor = isPrimary ? Color.FromArgb(30, 100, 200) : Color.White,
-                ForeColor = isPrimary ? Color.White : Color.FromArgb(45, 55, 70)
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold, GraphicsUnit.Point),
+                ForeColor = isPrimary ? UiTheme.Canvas : UiTheme.Ink,
+                Size = new Size(width, 40),
+                Text = text,
+                UseVisualStyleBackColor = false
             };
 
-            button.FlatAppearance.BorderColor = isPrimary
-                ? Color.FromArgb(30, 100, 200)
-                : Color.FromArgb(190, 198, 210);
+            button.FlatAppearance.BorderColor = isPrimary ? UiTheme.Primary : UiTheme.Border;
+            button.FlatAppearance.MouseDownBackColor = isPrimary ? UiTheme.PrimaryHover : UiTheme.Surface;
+            button.FlatAppearance.MouseOverBackColor = isPrimary ? UiTheme.PrimaryHover : UiTheme.Surface;
             return button;
         }
 
         private void LoadBootEntries()
         {
             UseWaitCursor = true;
-            bootEntriesList.Enabled = false;
+            refreshButton.Enabled = false;
+            bootEntriesGrid.Enabled = false;
             SetActionButtonsEnabled(false);
-            bootEntriesList.Items.Clear();
-            defaultSystemLabel.Text = "正在读取启动项...";
+            bootEntriesGrid.Rows.Clear();
+            currentDefaultNameLabel.Text = "正在读取启动项...";
+            currentDefaultDeviceLabel.Visible = false;
+            entryCountLabel.Text = string.Empty;
+            actionStatusLabel.Text = "正在读取 Windows 启动菜单...";
+            interfaceToolTip.SetToolTip(currentDefaultDeviceLabel, string.Empty);
+            interfaceToolTip.SetToolTip(actionStatusLabel, string.Empty);
 
             try
             {
                 List<BootEntry> bootEntries = BcdService.LoadEntries();
-
                 BootEntry defaultEntry = null;
+                DataGridViewRow firstSwitchableRow = null;
+
                 foreach (BootEntry entry in bootEntries)
                 {
-                    var item = new ListViewItem(entry.Description);
-                    item.SubItems.Add(entry.Device);
-                    item.SubItems.Add(entry.IsDefault ? "当前默认" : "");
-                    item.Tag = entry;
-                    bootEntriesList.Items.Add(item);
+                    int rowIndex = bootEntriesGrid.Rows.Add(
+                        entry.Description,
+                        entry.Device,
+                        entry.IsDefault ? "当前默认" : "可切换");
+                    DataGridViewRow row = bootEntriesGrid.Rows[rowIndex];
+                    row.Tag = entry;
+                    row.Cells[0].ToolTipText = entry.Description;
+                    row.Cells[1].ToolTipText = entry.Device;
 
                     if (entry.IsDefault)
                     {
+                        row.DefaultCellStyle.Font = new Font("Segoe UI", 10F, FontStyle.Bold, GraphicsUnit.Point);
+                        row.Cells[2].Style.ForeColor = UiTheme.Primary;
                         defaultEntry = entry;
+                    }
+                    else if (firstSwitchableRow == null)
+                    {
+                        firstSwitchableRow = row;
                     }
                 }
 
-                defaultSystemLabel.Text = defaultEntry == null
-                    ? "当前默认系统：未识别"
-                    : "当前默认系统：" + defaultEntry.DisplayName;
-
-                if (bootEntriesList.Items.Count > 0)
-                {
-                    bootEntriesList.Items[0].Selected = true;
-                }
+                entryCountLabel.Text = bootEntries.Count + " 个可用系统";
+                SetCurrentDefault(defaultEntry);
+                SelectInitialTarget(firstSwitchableRow);
             }
             catch (Exception exception)
             {
-                defaultSystemLabel.Text = "无法读取启动项";
+                currentDefaultNameLabel.Text = "无法读取启动项";
+                currentDefaultDeviceLabel.Visible = false;
+                actionStatusLabel.Text = "请检查管理员权限和 Windows 引导配置";
                 MessageBox.Show(
                     "读取 Windows 引导配置失败。请确认程序已获得管理员权限。\r\n\r\n" + exception.Message,
                     Text,
@@ -154,9 +403,44 @@ namespace DualBootSwitcher
             }
             finally
             {
-                bootEntriesList.Enabled = true;
+                refreshButton.Enabled = true;
+                bootEntriesGrid.Enabled = true;
                 UseWaitCursor = false;
                 UpdateActionButtons();
+            }
+        }
+
+        private void SetCurrentDefault(BootEntry defaultEntry)
+        {
+            if (defaultEntry == null)
+            {
+                currentDefaultNameLabel.Text = "未识别默认系统";
+                currentDefaultDeviceLabel.Visible = false;
+                interfaceToolTip.SetToolTip(currentDefaultDeviceLabel, string.Empty);
+                return;
+            }
+
+            currentDefaultNameLabel.Text = defaultEntry.Description;
+            currentDefaultDeviceLabel.Text = defaultEntry.Device;
+            currentDefaultDeviceLabel.Visible = true;
+            interfaceToolTip.SetToolTip(currentDefaultDeviceLabel, defaultEntry.Device);
+        }
+
+        private void SelectInitialTarget(DataGridViewRow firstSwitchableRow)
+        {
+            bootEntriesGrid.ClearSelection();
+
+            if (firstSwitchableRow != null)
+            {
+                firstSwitchableRow.Selected = true;
+                bootEntriesGrid.CurrentCell = firstSwitchableRow.Cells[0];
+                return;
+            }
+
+            if (bootEntriesGrid.Rows.Count > 0)
+            {
+                bootEntriesGrid.Rows[0].Selected = true;
+                bootEntriesGrid.CurrentCell = bootEntriesGrid.Rows[0].Cells[0];
             }
         }
 
@@ -170,6 +454,16 @@ namespace DualBootSwitcher
             BootEntry selectedEntry = GetSelectedEntry();
             bool canSetDefault = selectedEntry != null && !selectedEntry.IsDefault;
             SetActionButtonsEnabled(canSetDefault);
+
+            if (selectedEntry == null)
+            {
+                return;
+            }
+
+            actionStatusLabel.Text = selectedEntry.IsDefault
+                ? "当前系统已是默认启动项"
+                : "已选择 " + selectedEntry.Device + "，将在下次启动时生效";
+            interfaceToolTip.SetToolTip(actionStatusLabel, actionStatusLabel.Text);
         }
 
         private void SetActionButtonsEnabled(bool enabled)
@@ -184,27 +478,29 @@ namespace DualBootSwitcher
 
             if (enabled)
             {
-                button.BackColor = isPrimary ? Color.FromArgb(30, 100, 200) : Color.White;
-                button.ForeColor = isPrimary ? Color.White : Color.FromArgb(45, 55, 70);
-                button.FlatAppearance.BorderColor = isPrimary
-                    ? Color.FromArgb(30, 100, 200)
-                    : Color.FromArgb(190, 198, 210);
+                button.BackColor = isPrimary ? UiTheme.Primary : UiTheme.Canvas;
+                button.ForeColor = isPrimary ? UiTheme.Canvas : UiTheme.Ink;
+                button.FlatAppearance.BorderColor = isPrimary ? UiTheme.Primary : UiTheme.Border;
+                button.FlatAppearance.MouseDownBackColor = isPrimary ? UiTheme.PrimaryHover : UiTheme.Surface;
+                button.FlatAppearance.MouseOverBackColor = isPrimary ? UiTheme.PrimaryHover : UiTheme.Surface;
                 return;
             }
 
-            button.BackColor = Color.FromArgb(238, 241, 246);
-            button.ForeColor = Color.FromArgb(135, 145, 160);
-            button.FlatAppearance.BorderColor = Color.FromArgb(218, 224, 233);
+            button.BackColor = UiTheme.Disabled;
+            button.ForeColor = UiTheme.DisabledText;
+            button.FlatAppearance.BorderColor = UiTheme.Border;
+            button.FlatAppearance.MouseDownBackColor = UiTheme.Disabled;
+            button.FlatAppearance.MouseOverBackColor = UiTheme.Disabled;
         }
 
         private BootEntry GetSelectedEntry()
         {
-            if (bootEntriesList.SelectedItems.Count != 1)
+            if (bootEntriesGrid.SelectedRows.Count != 1)
             {
                 return null;
             }
 
-            return bootEntriesList.SelectedItems[0].Tag as BootEntry;
+            return bootEntriesGrid.SelectedRows[0].Tag as BootEntry;
         }
 
         private void SetDefault(bool restartAfterSetting)
@@ -221,7 +517,7 @@ namespace DualBootSwitcher
                 : "\r\n\r\n此操作只修改下次启动默认项，不会立即重启电脑。";
             DialogResult confirmation = MessageBox.Show(
                 "确认将“" + selectedEntry.DisplayName + "”" + action + "吗？" + consequence,
-                Text,
+                "确认切换",
                 MessageBoxButtons.OKCancel,
                 MessageBoxIcon.Warning,
                 MessageBoxDefaultButton.Button2);
