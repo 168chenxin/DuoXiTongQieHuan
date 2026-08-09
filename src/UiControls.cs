@@ -45,6 +45,13 @@ namespace DualBootSwitcher
             return 1F - (inverse * inverse * inverse * inverse);
         }
 
+        public static float EaseOutCubic(float value)
+        {
+            float clamped = Math.Max(0F, Math.Min(1F, value));
+            float inverse = 1F - clamped;
+            return 1F - (inverse * inverse * inverse);
+        }
+
         public static Color Blend(Color from, Color to, float progress)
         {
             float clamped = Math.Max(0F, Math.Min(1F, progress));
@@ -353,7 +360,7 @@ namespace DualBootSwitcher
                 true);
             base.BackColor = Color.Transparent;
 
-            animationTimer = new Timer { Interval = 15 };
+            animationTimer = new Timer { Interval = UiTheme.MotionFrameInterval };
             animationTimer.Tick += OnAnimationTick;
         }
 
@@ -371,6 +378,11 @@ namespace DualBootSwitcher
         {
             base.OnTextChanged(eventArgs);
             string newText = Text ?? string.Empty;
+
+            if (newText == targetText)
+            {
+                return;
+            }
 
             if (!IsHandleCreated || !UiMotion.IsEnabled || string.IsNullOrEmpty(targetText))
             {
@@ -403,17 +415,17 @@ namespace DualBootSwitcher
                 return;
             }
 
-            float eased = UiMotion.EaseOutQuart(animationProgress);
+            float eased = UiMotion.EaseOutCubic(animationProgress);
             DrawText(
                 eventArgs.Graphics,
                 previousText,
                 UiMotion.Blend(ForeColor, backdropColor, eased),
-                -(int)Math.Round(eased * 2F));
+                -(int)Math.Round(eased * 4F));
             DrawText(
                 eventArgs.Graphics,
                 targetText,
                 UiMotion.Blend(backdropColor, ForeColor, eased),
-                (int)Math.Round((1F - eased) * 2F));
+                (int)Math.Round((1F - eased) * 4F));
         }
 
         protected override void Dispose(bool disposing)
@@ -514,7 +526,7 @@ namespace DualBootSwitcher
             targetBorder = currentBorder;
             targetText = currentText;
 
-            animationTimer = new Timer { Interval = 15 };
+            animationTimer = new Timer { Interval = UiTheme.MotionFrameInterval };
             animationTimer.Tick += OnAnimationTick;
         }
 
@@ -741,7 +753,7 @@ namespace DualBootSwitcher
         {
             double elapsed = (DateTime.UtcNow - animationStartedAt).TotalMilliseconds;
             float linearProgress = Math.Min(1F, (float)(elapsed / animationDuration));
-            float easedProgress = UiMotion.EaseOutQuart(linearProgress);
+            float easedProgress = UiMotion.EaseOutCubic(linearProgress);
             currentFill = UiMotion.Blend(startFill, targetFill, easedProgress);
             currentBorder = UiMotion.Blend(startBorder, targetBorder, easedProgress);
             currentText = UiMotion.Blend(startText, targetText, easedProgress);
@@ -777,7 +789,7 @@ namespace DualBootSwitcher
         public AnimatedDataGridView()
         {
             DoubleBuffered = true;
-            selectionAnimationTimer = new Timer { Interval = 15 };
+            selectionAnimationTimer = new Timer { Interval = UiTheme.MotionFrameInterval };
             selectionAnimationTimer.Tick += OnSelectionAnimationTick;
         }
 
@@ -854,7 +866,7 @@ namespace DualBootSwitcher
         {
             double elapsed = (DateTime.UtcNow - selectionAnimationStartedAt).TotalMilliseconds;
             float linearProgress = Math.Min(1F, (float)(elapsed / UiTheme.StateMotionDuration));
-            float easedProgress = UiMotion.EaseOutQuart(linearProgress);
+            float easedProgress = UiMotion.EaseOutCubic(linearProgress);
             ApplySelectionColor(UiMotion.Blend(UiTheme.Surface, UiTheme.Selection, easedProgress));
 
             if (linearProgress >= 1F)

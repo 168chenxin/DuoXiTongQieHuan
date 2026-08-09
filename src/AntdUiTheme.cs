@@ -35,9 +35,9 @@ namespace DualBootSwitcher
             return new AntdUI.Button
             {
                 AutoEllipsis = true,
-                BackActive = isPrimary ? UiTheme.PrimaryPressed : UiTheme.Selection,
+                BackActive = UiTheme.PrimaryPressed,
                 BackColor = isPrimary ? UiTheme.Primary : UiTheme.Surface,
-                BackHover = isPrimary ? UiTheme.PrimaryHover : UiTheme.Hover,
+                BackHover = UiTheme.PrimaryHover,
                 BorderWidth = isPrimary ? 0F : 1F,
                 DefaultBorderColor = isPrimary ? Color.Transparent : UiTheme.Border,
                 Font = new Font(

@@ -7,8 +7,9 @@ namespace DualBootSwitcher
         public const int SurfaceCornerRadius = 8;
         public const int ControlCornerRadius = 10;
         public const int BadgeCornerRadius = 9;
-        public const int PressMotionDuration = 100;
-        public const int StateMotionDuration = 180;
+        public const int MotionFrameInterval = 16;
+        public const int PressMotionDuration = 110;
+        public const int StateMotionDuration = 220;
 
         public static readonly Color Canvas = Color.FromArgb(246, 248, 252);
         public static readonly Color Surface = Color.FromArgb(255, 255, 255);

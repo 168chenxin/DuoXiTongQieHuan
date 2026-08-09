@@ -51,6 +51,31 @@ if ($LASTEXITCODE -ne 0) {
     throw "UI tests failed with exit code $LASTEXITCODE."
 }
 
+$dependencyDirectory = Join-Path $outputDirectory 'dependencies'
+$antdUiAssembly = Join-Path $dependencyDirectory 'AntdUI.dll'
+if (-not (Test-Path -LiteralPath $antdUiAssembly)) {
+    & (Join-Path $root 'tools\restore-ui-dependencies.ps1') -OutputDirectory $dependencyDirectory
+}
+
+$antdUiTestExecutable = Join-Path $dependencyDirectory 'AntdUiThemeTests.exe'
+
+& $compiler /nologo /utf8output /codepage:65001 /target:exe "/out:$antdUiTestExecutable" `
+    /r:System.dll /r:System.Drawing.dll /r:System.Windows.Forms.dll "/r:$antdUiAssembly" `
+    "$root\src\UiTheme.cs" `
+    "$root\src\UiControls.cs" `
+    "$root\src\AntdUiTheme.cs" `
+    "$root\tests\AntdUiThemeTests.cs"
+
+if ($LASTEXITCODE -ne 0) {
+    throw "AntdUI theme test compilation failed with exit code $LASTEXITCODE."
+}
+
+& $antdUiTestExecutable
+
+if ($LASTEXITCODE -ne 0) {
+    throw "AntdUI theme tests failed with exit code $LASTEXITCODE."
+}
+
 $remarkTestExecutable = Join-Path $outputDirectory 'BootRemarkStoreTests.exe'
 
 & $compiler /nologo /utf8output /codepage:65001 /target:exe "/out:$remarkTestExecutable" `

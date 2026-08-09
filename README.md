@@ -1,10 +1,28 @@
-# 双系统快速切换
+<p align="center">
+  <img src="assets/dual-boot-switcher-logo.png" width="132" alt="双系统快速切换 Logo">
+</p>
 
-一个可直接复制运行的现代 Windows 小工具，用于在多个 Windows 引导项之间快速切换。
+<h1 align="center">双系统快速切换</h1>
+
+<p align="center">一个可直接复制运行的现代 Windows 小工具，用于在多个 Windows 引导项之间快速切换。</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Windows-10%20%7C%2011-0078D4?logo=windows&logoColor=white" alt="支持 Windows 10 和 Windows 11">
+  <img src="https://img.shields.io/badge/.NET%20Framework-4.x-512BD4" alt="基于 .NET Framework 4.x">
+  <img src="https://img.shields.io/badge/便携运行-无需安装-16A34A" alt="便携运行，无需安装">
+</p>
 
 ## 下载
 
 打开 GitHub 仓库的 **Releases** 页面，下载 `DualBootSwitcher.exe`（单文件版）或 `DualBootSwitcher-portable.zip`（附带 README 和许可证）。无需安装额外组件；首次运行仍会按 Windows 的 UAC 规则申请管理员权限。
+
+## 界面预览
+
+<p align="center">
+  <img src="assets/app-preview.png" width="860" alt="双系统快速切换主界面，包含启动项列表、所选系统详情和切换操作">
+</p>
+
+<p align="center"><sub>选择目标系统后，可以仅修改默认启动项，也可以确认后立即切换并重启。</sub></p>
 
 ## 便携运行
 

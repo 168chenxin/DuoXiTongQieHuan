@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Reflection;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using AntButton = AntdUI.Button;
 using AntPanel = AntdUI.Panel;
@@ -34,6 +35,7 @@ namespace DualBootSwitcher
         private BootRowViewModel selectedRow;
         private int currentTimeoutSeconds = -1;
         private int selectionGeneration;
+        private bool isLoadingBootEntries;
 
         public MainForm()
         {
@@ -138,7 +140,7 @@ namespace DualBootSwitcher
             refreshButton.Location = new Point(736, 212);
             refreshButton.Size = new Size(156, 36);
             refreshButton.AccessibleName = "刷新启动项";
-            refreshButton.Click += delegate { LoadBootEntries(); };
+            refreshButton.Click += async delegate { await LoadBootEntriesAsync(); };
 
             bootEntriesTable = CreateBootEntriesTable();
             bootEntriesTable.Location = new Point(28, 258);
@@ -298,7 +300,7 @@ namespace DualBootSwitcher
             Controls.Add(setDefaultAndRestartButton);
 
             SetActionButtonsEnabled(false);
-            Shown += delegate { LoadBootEntries(); };
+            Shown += async delegate { await LoadBootEntriesAsync(); };
         }
 
         protected override void Dispose(bool disposing)
@@ -505,8 +507,14 @@ namespace DualBootSwitcher
             return table;
         }
 
-        private void LoadBootEntries()
+        private async Task LoadBootEntriesAsync()
         {
+            if (isLoadingBootEntries)
+            {
+                return;
+            }
+
+            isLoadingBootEntries = true;
             UseWaitCursor = true;
             selectionGeneration++;
             refreshButton.Enabled = false;
@@ -536,7 +544,8 @@ namespace DualBootSwitcher
 
             try
             {
-                BootConfiguration configuration = BcdService.LoadConfiguration();
+                BootConfiguration configuration = await Task.Run(
+                    (Func<BootConfiguration>)BcdService.LoadConfiguration);
                 List<BootEntry> bootEntries = configuration.Entries;
                 BootEntry defaultEntry = null;
                 BootRowViewModel firstSwitchableRow = null;
@@ -577,6 +586,7 @@ namespace DualBootSwitcher
             }
             finally
             {
+                isLoadingBootEntries = false;
                 refreshButton.Loading = false;
                 refreshButton.Enabled = true;
                 bootEntriesTable.Enabled = true;
@@ -874,7 +884,7 @@ namespace DualBootSwitcher
             return selectedRow == null ? null : selectedRow.Entry;
         }
 
-        private void SetDefault(bool restartAfterSetting)
+        private async void SetDefault(bool restartAfterSetting)
         {
             BootEntry selectedEntry = GetSelectedEntry();
             if (selectedEntry == null)
@@ -911,7 +921,7 @@ namespace DualBootSwitcher
                     return;
                 }
 
-                LoadBootEntries();
+                await LoadBootEntriesAsync();
                 UiDialogs.ShowInfo(
                     this,
                     "默认启动系统已更新",

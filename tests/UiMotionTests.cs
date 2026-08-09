@@ -10,6 +10,7 @@ internal static class UiMotionTests
         try
         {
             UsesEaseOutQuartTiming();
+            UsesSmootherInteractionTiming();
             BlendsEveryColorChannel();
             UsesDpiScaledDrawing();
             BuildsRoundedGeometry();
@@ -29,6 +30,20 @@ internal static class UiMotionTests
         AssertClose(0F, UiMotion.EaseOutQuart(0F), "The easing curve should start at zero.");
         AssertClose(0.9375F, UiMotion.EaseOutQuart(0.5F), "The easing curve should decelerate naturally.");
         AssertClose(1F, UiMotion.EaseOutQuart(1F), "The easing curve should finish at one.");
+    }
+
+    private static void UsesSmootherInteractionTiming()
+    {
+        AssertClose(0F, UiMotion.EaseOutCubic(0F), "The interaction curve should start at zero.");
+        AssertClose(0.875F, UiMotion.EaseOutCubic(0.5F), "The interaction curve should retain visible motion after its midpoint.");
+        AssertClose(1F, UiMotion.EaseOutCubic(1F), "The interaction curve should finish at one.");
+        AssertTrue(
+            UiTheme.StateMotionDuration >= 200 && UiTheme.StateMotionDuration <= 250,
+            "State transitions should remain smooth without delaying task flow.");
+        AssertTrue(
+            UiTheme.PressMotionDuration >= 100 && UiTheme.PressMotionDuration < UiTheme.StateMotionDuration,
+            "Press feedback should be immediate and shorter than a state transition.");
+        AssertEqual(16, UiTheme.MotionFrameInterval, "Motion should target approximately 60 frames per second.");
     }
 
     private static void BlendsEveryColorChannel()
