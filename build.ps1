@@ -16,6 +16,10 @@ if (-not (Test-Path -LiteralPath $compiler)) {
 New-Item -ItemType Directory -Force -Path $outputDirectory | Out-Null
 New-Item -ItemType Directory -Force -Path $buildDirectory | Out-Null
 
+$dependencyDirectory = Join-Path $buildDirectory 'dependencies'
+& (Join-Path $root 'tools\restore-ui-dependencies.ps1') -OutputDirectory $dependencyDirectory
+$antdUiAssembly = Join-Path $dependencyDirectory 'AntdUI.dll'
+
 $iconPath = Join-Path $buildDirectory 'DualBootSwitcher.ico'
 $embeddedLogoPath = Join-Path $buildDirectory 'DualBootSwitcher-logo.png'
 & (Join-Path $root 'tools\generate-icon.ps1') -OutputPath $iconPath -PngOutputPath $embeddedLogoPath
@@ -28,14 +32,20 @@ $executablePath = Join-Path $outputDirectory 'DualBootSwitcher.exe'
     "/win32manifest:$root\src\app.manifest" `
     "/resource:$embeddedLogoPath,DualBootSwitcher.Logo.png" `
     "/resource:$root\LICENSE,DualBootSwitcher.LICENSE.txt" `
-    /r:System.dll /r:System.Drawing.dll /r:System.Windows.Forms.dll `
+    "/resource:$root\assets\licenses\AntdUI-Apache-2.0.txt,DualBootSwitcher.Licenses.AntdUI-Apache-2.0.txt" `
+    "/resource:$root\assets\THIRD_PARTY_NOTICES.md,DualBootSwitcher.THIRD_PARTY_NOTICES.md" `
+    "/resource:$antdUiAssembly,DualBootSwitcher.Dependencies.AntdUI.dll" `
+    /r:System.dll /r:System.Design.dll /r:System.Drawing.dll /r:System.Windows.Forms.dll `
+    "/r:$antdUiAssembly" `
     "$root\src\AssemblyInfo.cs" `
+    "$root\src\EmbeddedAssemblyLoader.cs" `
     "$root\src\BcdModels.cs" `
     "$root\src\BcdParser.cs" `
     "$root\src\BcdService.cs" `
     "$root\src\BootRemarkStore.cs" `
     "$root\src\UiTheme.cs" `
     "$root\src\UiControls.cs" `
+    "$root\src\AntdUiTheme.cs" `
     "$root\src\RemarkDialog.cs" `
     "$root\src\BootTimeoutWorkflow.cs" `
     "$root\src\TimeoutDialog.cs" `
@@ -47,7 +57,7 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 $packagePath = Join-Path $outputDirectory 'DualBootSwitcher-portable.zip'
-Compress-Archive -LiteralPath $executablePath, (Join-Path $root 'README.md'), (Join-Path $root 'CHANGELOG.md'), (Join-Path $root 'LICENSE'), (Join-Path $root 'assets\THIRD_PARTY_NOTICES.md') `
+Compress-Archive -LiteralPath $executablePath, (Join-Path $root 'README.md'), (Join-Path $root 'CHANGELOG.md'), (Join-Path $root 'LICENSE'), (Join-Path $root 'assets\THIRD_PARTY_NOTICES.md'), (Join-Path $root 'assets\licenses\AntdUI-Apache-2.0.txt') `
     -DestinationPath $packagePath -Force
 
 Write-Host "Built: $executablePath"

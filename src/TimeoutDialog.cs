@@ -6,14 +6,14 @@ namespace DualBootSwitcher
 {
     internal sealed class TimeoutDialog : Form
     {
-        private readonly NumericUpDown timeoutInput;
+        private readonly AntdUI.InputNumber timeoutInput;
 
         public TimeoutDialog(int currentSeconds)
         {
             Text = "修改启动等待时间";
             StartPosition = FormStartPosition.CenterParent;
             FormBorderStyle = FormBorderStyle.FixedDialog;
-            ClientSize = new Size(420, 210);
+            ClientSize = new Size(460, 246);
             MaximizeBox = false;
             MinimizeBox = false;
             ShowInTaskbar = false;
@@ -21,17 +21,20 @@ namespace DualBootSwitcher
             Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
             AutoScaleMode = AutoScaleMode.Dpi;
 
-            var surface = new RoundedPanel
+            var surface = new AntdUI.Panel
             {
-                FillColor = UiTheme.Surface,
-                CornerRadius = UiTheme.SurfaceCornerRadius,
+                Back = UiTheme.Surface,
+                BorderColor = UiTheme.Border,
+                BorderWidth = 1F,
+                Radius = 12,
                 Location = new Point(16, 16),
-                Size = new Size(388, 140)
+                Size = new Size(428, 174)
             };
 
             var titleLabel = new Label
             {
                 AutoSize = true,
+                BackColor = UiTheme.Surface,
                 Font = new Font("Segoe UI", 10F, FontStyle.Bold, GraphicsUnit.Point),
                 ForeColor = UiTheme.Ink,
                 Location = new Point(18, 14),
@@ -41,6 +44,7 @@ namespace DualBootSwitcher
             var hintLabel = new Label
             {
                 AutoSize = true,
+                BackColor = UiTheme.Surface,
                 Font = new Font("Segoe UI", 8.5F, FontStyle.Regular, GraphicsUnit.Point),
                 ForeColor = UiTheme.Muted,
                 Location = new Point(18, 40),
@@ -50,40 +54,52 @@ namespace DualBootSwitcher
             var inputLabel = new Label
             {
                 AutoSize = true,
+                BackColor = UiTheme.Surface,
                 Font = new Font("Segoe UI", 9F, FontStyle.Bold, GraphicsUnit.Point),
                 ForeColor = UiTheme.Ink,
                 Location = new Point(18, 78),
                 Text = "等待时间"
             };
 
-            timeoutInput = new NumericUpDown
+            timeoutInput = new AntdUI.InputNumber
             {
                 AccessibleName = "启动菜单等待秒数",
                 AccessibleDescription = "输入 0 到 999 秒，0 秒会直接启动默认系统",
+                AlwaysShowControl = true,
+                BackColor = UiTheme.Surface,
+                BorderActive = UiTheme.Primary,
+                BorderColor = UiTheme.Border,
+                BorderHover = UiTheme.Secondary,
+                BorderWidth = 1F,
                 Font = new Font("Segoe UI", 10F, FontStyle.Bold, GraphicsUnit.Point),
-                Location = new Point(104, 72),
+                Location = new Point(108, 69),
                 Maximum = 999,
                 Minimum = 0,
-                Size = new Size(118, 28),
+                Radius = 10,
+                ShowControl = true,
+                Size = new Size(132, 40),
                 TextAlign = HorizontalAlignment.Center,
-                Value = Math.Max(0, Math.Min(999, currentSeconds))
+                Value = Math.Max(0, Math.Min(999, currentSeconds)),
+                WheelModifyEnabled = false
             };
 
             var secondsLabel = new Label
             {
                 AutoSize = true,
+                BackColor = UiTheme.Surface,
                 Font = new Font("Segoe UI", 9F, FontStyle.Bold, GraphicsUnit.Point),
                 ForeColor = UiTheme.Ink,
-                Location = new Point(230, 78),
+                Location = new Point(250, 81),
                 Text = "秒"
             };
 
             var warningLabel = new Label
             {
                 AutoSize = true,
-                Font = new Font("Segoe UI", 8.5F, FontStyle.Regular, GraphicsUnit.Point),
-                ForeColor = UiTheme.Muted,
-                Location = new Point(18, 108),
+                BackColor = UiTheme.Surface,
+                Font = new Font("Segoe UI", 8.5F, FontStyle.Bold, GraphicsUnit.Point),
+                ForeColor = UiTheme.Warning,
+                Location = new Point(18, 126),
                 Text = "注意：0 秒会跳过系统选择，直接启动默认系统。"
             };
 
@@ -94,23 +110,15 @@ namespace DualBootSwitcher
             surface.Controls.Add(secondsLabel);
             surface.Controls.Add(warningLabel);
 
-            var cancelButton = new AnimatedButton(false)
-            {
-                Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point),
-                Location = new Point(194, 168),
-                Size = new Size(102, 36),
-                Text = "取消",
-                DialogResult = DialogResult.Cancel
-            };
+            AntdUI.Button cancelButton = UiFactory.CreateButton("取消", 104, false);
+            cancelButton.Location = new Point(228, 202);
+            cancelButton.Size = new Size(104, 36);
+            cancelButton.DialogResult = DialogResult.Cancel;
 
-            var saveButton = new AnimatedButton(true)
-            {
-                Font = new Font("Segoe UI", 9F, FontStyle.Bold, GraphicsUnit.Point),
-                Location = new Point(302, 168),
-                Size = new Size(102, 36),
-                Text = "保存修改",
-                DialogResult = DialogResult.OK
-            };
+            AntdUI.Button saveButton = UiFactory.CreateButton("保存修改", 104, true);
+            saveButton.Location = new Point(340, 202);
+            saveButton.Size = new Size(104, 36);
+            saveButton.DialogResult = DialogResult.OK;
 
             Controls.Add(surface);
             Controls.Add(cancelButton);

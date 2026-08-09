@@ -4,38 +4,47 @@ using System.Drawing;
 using System.IO;
 using System.Reflection;
 using System.Windows.Forms;
+using AntButton = AntdUI.Button;
+using AntPanel = AntdUI.Panel;
+using AntTable = AntdUI.Table;
+using AntTag = AntdUI.Tag;
 
 namespace DualBootSwitcher
 {
     internal sealed class MainForm : Form
     {
-        private readonly AnimatedDataGridView bootEntriesGrid;
+        private readonly AntTable bootEntriesTable;
         private readonly AnimatedLabel currentDefaultNameLabel;
-        private readonly RoundedLabel currentDefaultDeviceLabel;
+        private readonly AntTag currentDefaultDeviceTag;
         private readonly AnimatedLabel entryCountLabel;
         private readonly AnimatedLabel actionStatusLabel;
+        private readonly AnimatedLabel selectedNameLabel;
+        private readonly AnimatedLabel selectedRemarkLabel;
+        private readonly AntTag selectedDeviceTag;
+        private readonly AntTag selectedStateTag;
         private readonly ToolTip interfaceToolTip;
-        private readonly AnimatedButton timeoutButton;
-        private readonly AnimatedButton refreshButton;
-        private readonly AnimatedButton editRemarkButton;
-        private readonly AnimatedButton setDefaultButton;
-        private readonly AnimatedButton setDefaultAndRestartButton;
-        private readonly Font emphasizedRemarkFont;
+        private readonly AntButton timeoutButton;
+        private readonly AntButton refreshButton;
+        private readonly AntButton editRemarkButton;
+        private readonly AntButton setDefaultButton;
+        private readonly AntButton setDefaultAndRestartButton;
+        private readonly List<BootRowViewModel> bootRows = new List<BootRowViewModel>();
         private Icon applicationIcon;
         private Image applicationLogo;
+        private BootRowViewModel selectedRow;
         private int currentTimeoutSeconds = -1;
+        private int selectionGeneration;
 
         public MainForm()
         {
             Text = "双系统快速切换";
             StartPosition = FormStartPosition.CenterScreen;
-            ClientSize = new Size(780, 478);
+            ClientSize = new Size(920, 620);
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = false;
             BackColor = UiTheme.Canvas;
             Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
             AutoScaleMode = AutoScaleMode.Dpi;
-            emphasizedRemarkFont = new Font("Segoe UI", 10F, FontStyle.Bold, GraphicsUnit.Point);
 
             LoadApplicationAssets();
             interfaceToolTip = new ToolTip
@@ -47,12 +56,14 @@ namespace DualBootSwitcher
             };
             CreateHeader();
 
-            var defaultBand = new RoundedPanel
+            var defaultBand = new AntPanel
             {
-                FillColor = UiTheme.Surface,
-                CornerRadius = UiTheme.SurfaceCornerRadius,
-                Location = new Point(28, 106),
-                Size = new Size(724, 86)
+                Back = UiTheme.Surface,
+                BorderColor = UiTheme.Border,
+                BorderWidth = 1F,
+                Radius = 12,
+                Location = new Point(28, 104),
+                Size = new Size(864, 92)
             };
 
             var defaultLabel = new Label
@@ -60,7 +71,7 @@ namespace DualBootSwitcher
                 AutoSize = true,
                 Font = new Font("Segoe UI", 9F, FontStyle.Bold, GraphicsUnit.Point),
                 ForeColor = UiTheme.Muted,
-                Location = new Point(18, 13),
+                Location = new Point(20, 15),
                 Text = "当前默认启动"
             };
 
@@ -71,37 +82,37 @@ namespace DualBootSwitcher
                 BackdropColor = UiTheme.Surface,
                 Font = new Font("Segoe UI", 15F, FontStyle.Bold, GraphicsUnit.Point),
                 ForeColor = UiTheme.Ink,
-                Location = new Point(18, 35),
-                Size = new Size(520, 32),
+                Location = new Point(20, 40),
+                Size = new Size(650, 34),
                 Text = "正在读取启动项..."
             };
 
-            currentDefaultDeviceLabel = new RoundedLabel
+            currentDefaultDeviceTag = new AntTag
             {
                 AutoSize = false,
-                AutoEllipsis = true,
-                BackdropColor = UiTheme.Surface,
-                CornerRadius = UiTheme.BadgeCornerRadius,
-                FillColor = UiTheme.AccentSoft,
+                BackColor = UiTheme.AccentSoft,
+                BorderWidth = 0F,
                 Font = new Font("Segoe UI", 10F, FontStyle.Bold, GraphicsUnit.Point),
                 ForeColor = UiTheme.Accent,
-                Location = new Point(564, 27),
-                Size = new Size(140, 34),
+                Type = AntdUI.TTypeMini.Primary,
+                Radius = 9,
+                Location = new Point(706, 29),
+                Size = new Size(136, 34),
                 TextAlign = ContentAlignment.MiddleCenter,
                 Visible = false
             };
 
             defaultBand.Controls.Add(defaultLabel);
             defaultBand.Controls.Add(currentDefaultNameLabel);
-            defaultBand.Controls.Add(currentDefaultDeviceLabel);
+            defaultBand.Controls.Add(currentDefaultDeviceTag);
 
             var bootMenuLabel = new Label
             {
                 AutoSize = true,
                 Font = new Font("Segoe UI", 10F, FontStyle.Bold, GraphicsUnit.Point),
                 ForeColor = UiTheme.Ink,
-                Location = new Point(28, 213),
-                Text = "启动菜单"
+                Location = new Point(28, 221),
+                Text = "选择下次启动系统"
             };
 
             entryCountLabel = new AnimatedLabel
@@ -110,32 +121,141 @@ namespace DualBootSwitcher
                 BackdropColor = UiTheme.Canvas,
                 Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point),
                 ForeColor = UiTheme.Muted,
-                Location = new Point(590, 215),
-                Size = new Size(162, 20),
+                Location = new Point(356, 221),
+                Size = new Size(146, 20),
                 TextAlign = ContentAlignment.MiddleRight
             };
 
-            timeoutButton = CreateButton("启动等待：读取中...", 154, false);
+            timeoutButton = UiFactory.CreateButton("启动等待：读取中...", 158, false);
             timeoutButton.Font = new Font("Segoe UI", 8.5F, FontStyle.Bold, GraphicsUnit.Point);
-            timeoutButton.Location = new Point(420, 205);
-            timeoutButton.Size = new Size(154, 32);
+            timeoutButton.Location = new Point(562, 212);
+            timeoutButton.Size = new Size(158, 36);
             timeoutButton.AccessibleName = "修改启动菜单等待时间";
             timeoutButton.Enabled = false;
             timeoutButton.Click += delegate { EditBootTimeout(); };
 
-            bootEntriesGrid = CreateBootEntriesGrid();
-            bootEntriesGrid.Location = new Point(28, 240);
-            bootEntriesGrid.Size = new Size(724, 126);
-            bootEntriesGrid.AccessibleName = "Windows 启动系统列表";
-            bootEntriesGrid.AccessibleDescription = "选择要设为下次默认启动的 Windows 系统";
-            bootEntriesGrid.SelectionChanged += OnSelectedEntryChanged;
-            bootEntriesGrid.CellDoubleClick += OnBootEntryDoubleClick;
+            refreshButton = UiFactory.CreateButton("刷新启动项", 156, false);
+            refreshButton.Location = new Point(736, 212);
+            refreshButton.Size = new Size(156, 36);
+            refreshButton.AccessibleName = "刷新启动项";
+            refreshButton.Click += delegate { LoadBootEntries(); };
+
+            bootEntriesTable = CreateBootEntriesTable();
+            bootEntriesTable.Location = new Point(28, 258);
+            bootEntriesTable.Size = new Size(570, 246);
+            bootEntriesTable.AccessibleName = "Windows 启动系统列表";
+            bootEntriesTable.AccessibleDescription = "选择要设为下次默认启动的 Windows 系统";
+            bootEntriesTable.CellClick += OnBootEntryClick;
+            bootEntriesTable.CellDoubleClick += OnBootEntryDoubleClick;
+            bootEntriesTable.SelectIndexChanged += OnBootSelectionChanged;
+
+            var selectionPanel = new AntPanel
+            {
+                Back = UiTheme.Surface,
+                BorderColor = UiTheme.Border,
+                BorderWidth = 1F,
+                Radius = 12,
+                Location = new Point(616, 258),
+                Size = new Size(276, 246)
+            };
+
+            var selectionLabel = new Label
+            {
+                AutoSize = true,
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold, GraphicsUnit.Point),
+                ForeColor = UiTheme.Muted,
+                Location = new Point(20, 17),
+                Text = "当前选择"
+            };
+
+            selectedNameLabel = new AnimatedLabel
+            {
+                AutoEllipsis = true,
+                AutoSize = false,
+                BackdropColor = UiTheme.Surface,
+                Font = new Font("Segoe UI", 12F, FontStyle.Bold, GraphicsUnit.Point),
+                ForeColor = UiTheme.Ink,
+                Location = new Point(20, 42),
+                Size = new Size(236, 30),
+                Text = "请选择启动系统"
+            };
+
+            selectedDeviceTag = new AntTag
+            {
+                AutoSize = false,
+                BackColor = UiTheme.Canvas,
+                BorderWidth = 0F,
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold, GraphicsUnit.Point),
+                ForeColor = UiTheme.Ink,
+                Radius = 8,
+                Location = new Point(20, 78),
+                Size = new Size(76, 30),
+                Text = "--",
+                TextAlign = ContentAlignment.MiddleCenter
+            };
+
+            selectedStateTag = new AntTag
+            {
+                AutoSize = false,
+                BackColor = UiTheme.AccentSoft,
+                BorderWidth = 0F,
+                Font = new Font("Segoe UI", 8.5F, FontStyle.Bold, GraphicsUnit.Point),
+                ForeColor = UiTheme.Accent,
+                Radius = 8,
+                Location = new Point(106, 78),
+                Size = new Size(116, 30),
+                Text = "等待选择",
+                TextAlign = ContentAlignment.MiddleCenter
+            };
+
+            var selectionDivider = new Panel
+            {
+                BackColor = UiTheme.Border,
+                Location = new Point(20, 124),
+                Size = new Size(236, 1)
+            };
+
+            var remarkLabel = new Label
+            {
+                AutoSize = true,
+                Font = new Font("Segoe UI", 8.5F, FontStyle.Bold, GraphicsUnit.Point),
+                ForeColor = UiTheme.Muted,
+                Location = new Point(20, 139),
+                Text = "用途备注"
+            };
+
+            selectedRemarkLabel = new AnimatedLabel
+            {
+                AutoEllipsis = true,
+                AutoSize = false,
+                BackdropColor = UiTheme.Surface,
+                Font = new Font("Segoe UI", 11F, FontStyle.Bold, GraphicsUnit.Point),
+                ForeColor = UiTheme.Accent,
+                Location = new Point(20, 160),
+                Size = new Size(236, 28),
+                Text = "未设置备注"
+            };
+
+            editRemarkButton = UiFactory.CreateButton("编辑用途备注", 236, false);
+            editRemarkButton.Location = new Point(20, 198);
+            editRemarkButton.Size = new Size(236, 34);
+            editRemarkButton.AccessibleName = "编辑启动项备注";
+            editRemarkButton.Click += delegate { EditSelectedRemark(); };
+
+            selectionPanel.Controls.Add(selectionLabel);
+            selectionPanel.Controls.Add(selectedNameLabel);
+            selectionPanel.Controls.Add(selectedDeviceTag);
+            selectionPanel.Controls.Add(selectedStateTag);
+            selectionPanel.Controls.Add(selectionDivider);
+            selectionPanel.Controls.Add(remarkLabel);
+            selectionPanel.Controls.Add(selectedRemarkLabel);
+            selectionPanel.Controls.Add(editRemarkButton);
 
             var divider = new Panel
             {
                 BackColor = UiTheme.Border,
-                Location = new Point(28, 389),
-                Size = new Size(724, 1)
+                Location = new Point(28, 528),
+                Size = new Size(864, 1)
             };
 
             actionStatusLabel = new AnimatedLabel
@@ -145,42 +265,35 @@ namespace DualBootSwitcher
                 BackdropColor = UiTheme.Canvas,
                 Font = new Font("Segoe UI", 9F, FontStyle.Bold, GraphicsUnit.Point),
                 ForeColor = UiTheme.Muted,
-                Location = new Point(28, 401),
-                Size = new Size(338, 24),
+                Location = new Point(28, 540),
+                Size = new Size(520, 24),
                 TextAlign = ContentAlignment.MiddleLeft,
                 Text = "正在读取 Windows 启动菜单..."
             };
 
-            refreshButton = CreateButton("刷新启动项", 126, false);
-            refreshButton.Location = new Point(28, 426);
-            refreshButton.AccessibleName = "刷新启动项";
-            refreshButton.Click += delegate { LoadBootEntries(); };
-
-            editRemarkButton = CreateButton("编辑备注", 116, false);
-            editRemarkButton.Location = new Point(162, 426);
-            editRemarkButton.AccessibleName = "编辑启动项备注";
-            editRemarkButton.Click += delegate { EditSelectedRemark(); };
             interfaceToolTip.SetToolTip(editRemarkButton, "为选中的启动系统设置用途备注");
 
-            setDefaultButton = CreateButton("仅设为默认", 132, false);
-            setDefaultButton.Location = new Point(430, 426);
+            setDefaultButton = UiFactory.CreateButton("仅设为默认", 142, false);
+            setDefaultButton.Location = new Point(576, 565);
+            setDefaultButton.Size = new Size(142, 42);
             setDefaultButton.AccessibleName = "仅将选中系统设为默认";
             setDefaultButton.Click += delegate { SetDefault(false); };
 
-            setDefaultAndRestartButton = CreateButton("切换并重启", 160, true);
-            setDefaultAndRestartButton.Location = new Point(592, 426);
+            setDefaultAndRestartButton = UiFactory.CreateButton("切换并重启", 162, true);
+            setDefaultAndRestartButton.Location = new Point(730, 565);
+            setDefaultAndRestartButton.Size = new Size(162, 42);
             setDefaultAndRestartButton.AccessibleName = "将选中系统设为默认并重启";
             setDefaultAndRestartButton.Click += delegate { SetDefault(true); };
 
             Controls.Add(defaultBand);
             Controls.Add(bootMenuLabel);
             Controls.Add(timeoutButton);
+            Controls.Add(refreshButton);
             Controls.Add(entryCountLabel);
-            Controls.Add(bootEntriesGrid);
+            Controls.Add(bootEntriesTable);
+            Controls.Add(selectionPanel);
             Controls.Add(divider);
             Controls.Add(actionStatusLabel);
-            Controls.Add(refreshButton);
-            Controls.Add(editRemarkButton);
             Controls.Add(setDefaultButton);
             Controls.Add(setDefaultAndRestartButton);
 
@@ -203,11 +316,6 @@ namespace DualBootSwitcher
             if (disposing && interfaceToolTip != null)
             {
                 interfaceToolTip.Dispose();
-            }
-
-            if (disposing && emphasizedRemarkFont != null)
-            {
-                emphasizedRemarkFont.Dispose();
             }
 
             base.Dispose(disposing);
@@ -245,14 +353,14 @@ namespace DualBootSwitcher
             {
                 BackColor = UiTheme.Header,
                 Location = new Point(0, 0),
-                Size = new Size(780, 78)
+                Size = new Size(920, 84)
             };
 
             var logo = new HighQualityImageControl
             {
                 BackColor = UiTheme.Header,
                 Image = applicationLogo,
-                Location = new Point(28, 16),
+                Location = new Point(28, 19),
                 Size = new Size(46, 46)
             };
 
@@ -261,7 +369,7 @@ namespace DualBootSwitcher
                 AutoSize = true,
                 Font = new Font("Segoe UI", 13F, FontStyle.Bold, GraphicsUnit.Point),
                 ForeColor = UiTheme.Ink,
-                Location = new Point(88, 18),
+                Location = new Point(94, 18),
                 Text = "双系统快速切换"
             };
 
@@ -270,29 +378,30 @@ namespace DualBootSwitcher
                 AutoSize = true,
                 Font = new Font("Segoe UI", 8.5F, FontStyle.Regular, GraphicsUnit.Point),
                 ForeColor = UiTheme.HeaderMuted,
-                Location = new Point(90, 47),
-                Text = "WINDOWS BOOT MENU"
+                Location = new Point(96, 49),
+                Text = "Windows 启动配置"
             };
 
-            var bcdLabel = new RoundedLabel
+            var bcdLabel = new AntTag
             {
                 AutoSize = false,
-                BackdropColor = UiTheme.Header,
-                CornerRadius = UiTheme.BadgeCornerRadius,
-                FillColor = UiTheme.AccentSoft,
+                BackColor = UiTheme.AccentSoft,
+                BorderWidth = 0F,
                 Font = new Font("Segoe UI", 8.5F, FontStyle.Bold, GraphicsUnit.Point),
                 ForeColor = UiTheme.Accent,
-                Location = new Point(630, 24),
-                Size = new Size(122, 30),
-                Text = "管理员模式",
+                Type = AntdUI.TTypeMini.Primary,
+                Radius = 9,
+                Location = new Point(754, 25),
+                Size = new Size(138, 32),
+                Text = "管理员权限已启用",
                 TextAlign = ContentAlignment.MiddleCenter
             };
 
             var accentLine = new Panel
             {
                 BackColor = UiTheme.Border,
-                Location = new Point(0, 77),
-                Size = new Size(780, 1)
+                Location = new Point(0, 83),
+                Size = new Size(920, 1)
             };
 
             header.Controls.Add(logo);
@@ -303,138 +412,126 @@ namespace DualBootSwitcher
             Controls.Add(header);
         }
 
-        private static AnimatedDataGridView CreateBootEntriesGrid()
+        private static AntTable CreateBootEntriesTable()
         {
-            var grid = new AnimatedDataGridView
+            var table = new AntTable
             {
-                AllowUserToAddRows = false,
-                AllowUserToDeleteRows = false,
-                AllowUserToResizeColumns = false,
-                AllowUserToResizeRows = false,
-                AutoGenerateColumns = false,
-                BackgroundColor = UiTheme.Surface,
-                BackdropColor = UiTheme.Canvas,
-                BorderStyle = BorderStyle.None,
-                CellBorderStyle = DataGridViewCellBorderStyle.SingleHorizontal,
-                ColumnHeadersBorderStyle = DataGridViewHeaderBorderStyle.Single,
-                ColumnHeadersHeight = 32,
-                ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing,
-                EnableHeadersVisualStyles = false,
-                GridColor = UiTheme.Border,
-                MultiSelect = false,
-                ReadOnly = true,
-                RowHeadersVisible = false,
-                RowTemplate = { Height = 42 },
-                SelectionMode = DataGridViewSelectionMode.FullRowSelect,
-                ShowCellErrors = false,
-                ShowCellToolTips = true,
-                ShowEditingIcon = false,
-                ShowRowErrors = false
-            };
-
-            grid.ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle
-            {
-                Alignment = DataGridViewContentAlignment.MiddleLeft,
-                BackColor = UiTheme.Canvas,
-                Font = new Font("Segoe UI", 8.5F, FontStyle.Bold, GraphicsUnit.Point),
-                ForeColor = UiTheme.Muted,
-                Padding = new Padding(10, 0, 0, 0),
-                SelectionBackColor = UiTheme.Canvas,
-                SelectionForeColor = UiTheme.Muted
-            };
-
-            grid.DefaultCellStyle = new DataGridViewCellStyle
-            {
-                Alignment = DataGridViewContentAlignment.MiddleLeft,
+                AnimationTime = UiTheme.StateMotionDuration,
                 BackColor = UiTheme.Surface,
-                Font = new Font("Segoe UI", 10F, FontStyle.Regular, GraphicsUnit.Point),
-                ForeColor = UiTheme.Ink,
-                Padding = new Padding(10, 0, 0, 0),
-                SelectionBackColor = UiTheme.Selection,
-                SelectionForeColor = UiTheme.Ink
+                BorderColor = UiTheme.Border,
+                BorderWidth = 1F,
+                Bordered = false,
+                ColumnBack = UiTheme.Canvas,
+                ColumnFore = UiTheme.Muted,
+                ColumnFont = new Font("Segoe UI", 8.5F, FontStyle.Bold, GraphicsUnit.Point),
+                FixedHeader = true,
+                Font = new Font("Segoe UI", 9.5F, FontStyle.Regular, GraphicsUnit.Point),
+                GapCell = 14,
+                LostFocusClearSelection = false,
+                MultipleRows = false,
+                Radius = 12,
+                RowHeight = 48,
+                RowHeightHeader = 38,
+                RowHoverBg = UiTheme.Hover,
+                RowSelectedBg = UiTheme.SelectionStrong,
+                RowSelectedFore = UiTheme.Ink,
+                ShowTip = true,
+                VisibleHeader = true
             };
 
-            grid.AlternatingRowsDefaultCellStyle = new DataGridViewCellStyle
+            var systemColumn = new AntdUI.Column("SystemName", "启动系统")
             {
-                BackColor = UiTheme.Canvas,
-                SelectionBackColor = UiTheme.Selection,
-                SelectionForeColor = UiTheme.Ink
+                Ellipsis = true,
+                Width = "37%",
+                Style = new AntTable.CellStyleInfo { FontBold = true }
+            };
+            var deviceColumn = new AntdUI.Column("Device", "分区")
+            {
+                Width = "16%",
+                Style = new AntTable.CellStyleInfo { FontBold = true }
+            };
+            var remarkColumn = new AntdUI.Column("Remark", "用途备注")
+            {
+                Ellipsis = true,
+                Width = "29%"
+            };
+            var statusColumn = new AntdUI.Column("Status", "状态", AntdUI.ColumnAlign.Center)
+            {
+                Width = "18%"
             };
 
-            grid.Columns.Add(new DataGridViewTextBoxColumn
+            var regularRemarkFont = new Font("Segoe UI", 9.5F, FontStyle.Regular, GraphicsUnit.Point);
+            var emphasizedRemarkFont = new Font("Segoe UI", 9.5F, FontStyle.Bold, GraphicsUnit.Point);
+            remarkColumn.Render = delegate(object value, object record, int rowIndex)
             {
-                DefaultCellStyle = new DataGridViewCellStyle
+                var row = record as BootRowViewModel;
+                if (row == null)
                 {
-                    Font = new Font("Segoe UI", 10F, FontStyle.Bold, GraphicsUnit.Point)
-                },
-                HeaderText = "启动系统",
-                Name = "system",
-                SortMode = DataGridViewColumnSortMode.NotSortable,
-                Width = 260
-            });
-            grid.Columns.Add(new DataGridViewTextBoxColumn
-            {
-                DefaultCellStyle = new DataGridViewCellStyle
-                {
-                    Font = new Font("Segoe UI", 10F, FontStyle.Bold, GraphicsUnit.Point)
-                },
-                HeaderText = "分区",
-                Name = "device",
-                SortMode = DataGridViewColumnSortMode.NotSortable,
-                Width = 110
-            });
-            grid.Columns.Add(new DataGridViewTextBoxColumn
-            {
-                HeaderText = "备注",
-                Name = "remark",
-                SortMode = DataGridViewColumnSortMode.NotSortable,
-                Width = 210
-            });
-            grid.Columns.Add(new DataGridViewTextBoxColumn
-            {
-                AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill,
-                DefaultCellStyle = new DataGridViewCellStyle
-                {
-                    Font = new Font("Segoe UI", 9F, FontStyle.Bold, GraphicsUnit.Point)
-                },
-                HeaderText = "状态",
-                Name = "status",
-                SortMode = DataGridViewColumnSortMode.NotSortable
-            });
+                    return value;
+                }
 
-            return grid;
-        }
-
-        private static AnimatedButton CreateButton(string text, int width, bool isPrimary)
-        {
-            var button = new AnimatedButton(isPrimary)
-            {
-                Font = new Font(
-                    "Segoe UI",
-                    9F,
-                    isPrimary ? FontStyle.Bold : FontStyle.Regular,
-                    GraphicsUnit.Point),
-                Size = new Size(width, 40),
-                Text = text
+                return new AntdUI.CellText(row.Remark)
+                {
+                    Font = row.HasRemark ? emphasizedRemarkFont : regularRemarkFont,
+                    Fore = row.HasRemark ? UiTheme.Accent : UiTheme.Muted
+                };
             };
-            return button;
+            statusColumn.Render = delegate(object value, object record, int rowIndex)
+            {
+                var row = record as BootRowViewModel;
+                if (row == null)
+                {
+                    return value;
+                }
+
+                return new AntdUI.CellTag(row.Status)
+                {
+                    Back = row.IsDefault ? UiTheme.SuccessSoft : UiTheme.AccentSoft,
+                    BorderWidth = 0F,
+                    Fore = row.IsDefault ? UiTheme.Success : UiTheme.Accent
+                };
+            };
+            table.Disposed += delegate
+            {
+                regularRemarkFont.Dispose();
+                emphasizedRemarkFont.Dispose();
+            };
+
+            table.Columns.Add(systemColumn);
+            table.Columns.Add(deviceColumn);
+            table.Columns.Add(remarkColumn);
+            table.Columns.Add(statusColumn);
+
+            return table;
         }
 
         private void LoadBootEntries()
         {
             UseWaitCursor = true;
+            selectionGeneration++;
             refreshButton.Enabled = false;
+            refreshButton.Loading = true;
             timeoutButton.Enabled = false;
             timeoutButton.Text = "启动等待：读取中...";
             currentTimeoutSeconds = -1;
-            bootEntriesGrid.Enabled = false;
+            bootEntriesTable.Enabled = false;
             SetActionButtonsEnabled(false);
-            bootEntriesGrid.Rows.Clear();
+            bootRows.Clear();
+            selectedRow = null;
+            bootEntriesTable.DataSource = null;
             currentDefaultNameLabel.Text = "正在读取启动项...";
-            currentDefaultDeviceLabel.Visible = false;
+            currentDefaultDeviceTag.Visible = false;
             entryCountLabel.Text = string.Empty;
+            selectedNameLabel.Text = "请选择启动系统";
+            selectedDeviceTag.Text = "--";
+            selectedStateTag.Text = "等待选择";
+            selectedStateTag.Type = AntdUI.TTypeMini.Default;
+            selectedStateTag.BackColor = UiTheme.Canvas;
+            selectedStateTag.ForeColor = UiTheme.Muted;
+            selectedRemarkLabel.Text = "未设置备注";
+            selectedRemarkLabel.ForeColor = UiTheme.Muted;
             actionStatusLabel.Text = "正在读取 Windows 启动菜单...";
-            interfaceToolTip.SetToolTip(currentDefaultDeviceLabel, string.Empty);
+            interfaceToolTip.SetToolTip(currentDefaultDeviceTag, string.Empty);
             interfaceToolTip.SetToolTip(actionStatusLabel, string.Empty);
 
             try
@@ -442,27 +539,17 @@ namespace DualBootSwitcher
                 BootConfiguration configuration = BcdService.LoadConfiguration();
                 List<BootEntry> bootEntries = configuration.Entries;
                 BootEntry defaultEntry = null;
-                DataGridViewRow firstSwitchableRow = null;
+                BootRowViewModel firstSwitchableRow = null;
                 SetTimeoutDisplay(configuration.TimeoutSeconds);
 
                 foreach (BootEntry entry in bootEntries)
                 {
                     string remark = GetEntryRemark(entry);
-                    int rowIndex = bootEntriesGrid.Rows.Add(
-                        entry.Description,
-                        entry.Device,
-                        GetRemarkDisplay(remark),
-                        entry.IsDefault ? "当前默认" : "可切换");
-                    DataGridViewRow row = bootEntriesGrid.Rows[rowIndex];
-                    row.Tag = entry;
-                    row.Cells[0].ToolTipText = entry.Description;
-                    row.Cells[1].ToolTipText = entry.Device;
-                    row.Cells[2].ToolTipText = remark;
-                    ApplyRemarkCellStyle(row.Cells[2], remark);
+                    var row = new BootRowViewModel(entry, remark);
+                    bootRows.Add(row);
 
                     if (entry.IsDefault)
                     {
-                        row.Cells[3].Style.ForeColor = UiTheme.Primary;
                         defaultEntry = entry;
                     }
                     else if (firstSwitchableRow == null)
@@ -471,6 +558,7 @@ namespace DualBootSwitcher
                     }
                 }
 
+                bootEntriesTable.DataSource = bootRows.ToArray();
                 entryCountLabel.Text = bootEntries.Count + " 个可用系统";
                 SetCurrentDefault(defaultEntry);
                 SelectInitialTarget(firstSwitchableRow);
@@ -478,20 +566,20 @@ namespace DualBootSwitcher
             catch (Exception exception)
             {
                 currentDefaultNameLabel.Text = "无法读取启动项";
-                currentDefaultDeviceLabel.Visible = false;
+                currentDefaultDeviceTag.Visible = false;
                 timeoutButton.Text = "启动等待：读取失败";
                 timeoutButton.Enabled = false;
                 actionStatusLabel.Text = "请检查管理员权限和 Windows 引导配置";
-                MessageBox.Show(
-                    "读取 Windows 引导配置失败。请确认程序已获得管理员权限。\r\n\r\n" + exception.Message,
-                    Text,
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Error);
+                UiDialogs.ShowError(
+                    this,
+                    "读取启动配置失败",
+                    "读取 Windows 引导配置失败。请确认程序已获得管理员权限。\r\n\r\n" + exception.Message);
             }
             finally
             {
+                refreshButton.Loading = false;
                 refreshButton.Enabled = true;
-                bootEntriesGrid.Enabled = true;
+                bootEntriesTable.Enabled = true;
                 UseWaitCursor = false;
                 UpdateActionButtons();
             }
@@ -502,41 +590,93 @@ namespace DualBootSwitcher
             if (defaultEntry == null)
             {
                 currentDefaultNameLabel.Text = "未识别默认系统";
-                currentDefaultDeviceLabel.Visible = false;
+                currentDefaultDeviceTag.Visible = false;
                 interfaceToolTip.SetToolTip(currentDefaultNameLabel, string.Empty);
-                interfaceToolTip.SetToolTip(currentDefaultDeviceLabel, string.Empty);
+                interfaceToolTip.SetToolTip(currentDefaultDeviceTag, string.Empty);
                 return;
             }
 
             string displayName = GetEntryDisplayName(defaultEntry);
             currentDefaultNameLabel.Text = displayName;
-            currentDefaultDeviceLabel.Text = defaultEntry.Device;
-            currentDefaultDeviceLabel.Visible = true;
+            currentDefaultDeviceTag.Text = defaultEntry.Device;
+            currentDefaultDeviceTag.Visible = true;
             interfaceToolTip.SetToolTip(currentDefaultNameLabel, displayName);
-            interfaceToolTip.SetToolTip(currentDefaultDeviceLabel, defaultEntry.Device);
+            interfaceToolTip.SetToolTip(currentDefaultDeviceTag, defaultEntry.Device);
         }
 
-        private void SelectInitialTarget(DataGridViewRow firstSwitchableRow)
+        private void SelectInitialTarget(BootRowViewModel firstSwitchableRow)
         {
-            bootEntriesGrid.ClearSelection();
-
             if (firstSwitchableRow != null)
             {
-                firstSwitchableRow.Selected = true;
-                bootEntriesGrid.CurrentCell = firstSwitchableRow.Cells[0];
+                SelectBootRow(firstSwitchableRow, true);
+            }
+            else if (bootRows.Count > 0)
+            {
+                SelectBootRow(bootRows[0], true);
+            }
+        }
+
+        private void OnBootEntryClick(object sender, AntdUI.TableClickEventArgs eventArgs)
+        {
+            var row = eventArgs.Record as BootRowViewModel;
+            if (row == null)
+            {
                 return;
             }
 
-            if (bootEntriesGrid.Rows.Count > 0)
-            {
-                bootEntriesGrid.Rows[0].Selected = true;
-                bootEntriesGrid.CurrentCell = bootEntriesGrid.Rows[0].Cells[0];
-            }
+            SelectBootRow(row, false);
         }
 
-        private void OnSelectedEntryChanged(object sender, EventArgs eventArgs)
+        private void OnBootSelectionChanged(object sender, EventArgs eventArgs)
         {
+            var focusedRow = bootEntriesTable.FocusedRow as BootRowViewModel;
+            if (focusedRow == null ||
+                focusedRow == selectedRow ||
+                !bootRows.Contains(focusedRow))
+            {
+                return;
+            }
+
+            selectedRow = focusedRow;
             UpdateActionButtons();
+        }
+
+        private void SelectBootRow(BootRowViewModel row, bool deferVisualSelection)
+        {
+            selectedRow = row;
+            UpdateActionButtons();
+
+            int rowIndex = bootRows.IndexOf(row);
+            if (rowIndex < 0)
+            {
+                return;
+            }
+
+            int expectedGeneration = selectionGeneration;
+            MethodInvoker applySelection = delegate
+            {
+                if (IsDisposed ||
+                    !IsHandleCreated ||
+                    expectedGeneration != selectionGeneration ||
+                    rowIndex >= bootRows.Count ||
+                    !ReferenceEquals(bootRows[rowIndex], row))
+                {
+                    return;
+                }
+
+                bootEntriesTable.SelectedIndex = rowIndex + 1;
+                selectedRow = row;
+                UpdateActionButtons();
+            };
+
+            if (deferVisualSelection)
+            {
+                BeginInvoke(applySelection);
+            }
+            else
+            {
+                applySelection();
+            }
         }
 
         private void UpdateActionButtons()
@@ -549,8 +689,37 @@ namespace DualBootSwitcher
 
             if (selectedEntry == null)
             {
+                selectedNameLabel.Text = "请选择启动系统";
+                selectedDeviceTag.Text = "--";
+                selectedStateTag.Text = "等待选择";
+                selectedStateTag.Type = AntdUI.TTypeMini.Default;
+                selectedStateTag.BackColor = UiTheme.Canvas;
+                selectedStateTag.ForeColor = UiTheme.Muted;
+                selectedRemarkLabel.Text = "未设置备注";
+                selectedRemarkLabel.ForeColor = UiTheme.Muted;
                 return;
             }
+
+            string remark = GetEntryRemark(selectedEntry);
+            selectedNameLabel.Text = selectedEntry.Description;
+            selectedDeviceTag.Text = selectedEntry.Device;
+            selectedDeviceTag.Type = AntdUI.TTypeMini.Default;
+            selectedStateTag.Text = selectedEntry.IsDefault ? "当前默认系统" : "可设为默认";
+            selectedStateTag.Type = selectedEntry.IsDefault
+                ? AntdUI.TTypeMini.Success
+                : AntdUI.TTypeMini.Primary;
+            selectedStateTag.BackColor = selectedEntry.IsDefault
+                ? UiTheme.SuccessSoft
+                : UiTheme.AccentSoft;
+            selectedStateTag.ForeColor = selectedEntry.IsDefault
+                ? UiTheme.Success
+                : UiTheme.Accent;
+            selectedRemarkLabel.Text = string.IsNullOrWhiteSpace(remark) ? "未设置备注" : remark;
+            selectedRemarkLabel.ForeColor = string.IsNullOrWhiteSpace(remark)
+                ? UiTheme.Muted
+                : UiTheme.Accent;
+            interfaceToolTip.SetToolTip(selectedNameLabel, selectedEntry.Description);
+            interfaceToolTip.SetToolTip(selectedRemarkLabel, selectedRemarkLabel.Text);
 
             actionStatusLabel.Text = selectedEntry.IsDefault
                 ? "当前系统已是默认启动项"
@@ -565,16 +734,15 @@ namespace DualBootSwitcher
             setDefaultAndRestartButton.Enabled = enabled;
         }
 
-        private void OnBootEntryDoubleClick(object sender, DataGridViewCellEventArgs eventArgs)
+        private void OnBootEntryDoubleClick(object sender, AntdUI.TableClickEventArgs eventArgs)
         {
-            if (eventArgs.RowIndex < 0 || eventArgs.RowIndex >= bootEntriesGrid.Rows.Count)
+            var row = eventArgs.Record as BootRowViewModel;
+            if (row == null)
             {
                 return;
             }
 
-            bootEntriesGrid.ClearSelection();
-            bootEntriesGrid.Rows[eventArgs.RowIndex].Selected = true;
-            bootEntriesGrid.CurrentCell = bootEntriesGrid.Rows[eventArgs.RowIndex].Cells[0];
+            SelectBootRow(row, false);
             EditSelectedRemark();
         }
 
@@ -615,11 +783,10 @@ namespace DualBootSwitcher
             catch (Exception exception)
             {
                 timeoutButton.Enabled = currentTimeoutSeconds >= 0;
-                MessageBox.Show(
-                    "修改启动等待时间失败。\r\n\r\n" + exception.Message,
-                    Text,
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Error);
+                UiDialogs.ShowError(
+                    this,
+                    "修改启动等待失败",
+                    "修改启动等待时间失败。\r\n\r\n" + exception.Message);
             }
         }
 
@@ -668,29 +835,30 @@ namespace DualBootSwitcher
                 }
                 catch (Exception exception)
                 {
-                    MessageBox.Show(
-                        exception.Message,
-                        Text,
-                        MessageBoxButtons.OK,
-                        MessageBoxIcon.Error);
+                    UiDialogs.ShowError(this, "保存备注失败", exception.Message);
                 }
             }
         }
 
         private void UpdateRemarkRow(BootEntry entry)
         {
-            foreach (DataGridViewRow row in bootEntriesGrid.Rows)
+            foreach (BootRowViewModel row in bootRows)
             {
-                if (row.Tag != entry)
+                if (row.Entry != entry)
                 {
                     continue;
                 }
 
                 string remark = GetEntryRemark(entry);
-                row.Cells[2].Value = GetRemarkDisplay(remark);
-                row.Cells[2].ToolTipText = remark;
-                ApplyRemarkCellStyle(row.Cells[2], remark);
+                row.SetRemark(remark);
                 break;
+            }
+
+            int selectedIndex = bootRows.IndexOf(selectedRow);
+            bootEntriesTable.DataSource = bootRows.ToArray();
+            if (selectedIndex >= 0)
+            {
+                SelectBootRow(bootRows[selectedIndex], true);
             }
 
             if (entry.IsDefault)
@@ -703,12 +871,7 @@ namespace DualBootSwitcher
 
         private BootEntry GetSelectedEntry()
         {
-            if (bootEntriesGrid.SelectedRows.Count != 1)
-            {
-                return null;
-            }
-
-            return bootEntriesGrid.SelectedRows[0].Tag as BootEntry;
+            return selectedRow == null ? null : selectedRow.Entry;
         }
 
         private void SetDefault(bool restartAfterSetting)
@@ -723,12 +886,11 @@ namespace DualBootSwitcher
             string consequence = restartAfterSetting
                 ? "\r\n\r\n当前打开的程序会因重启而关闭，请先保存正在进行的工作。"
                 : "\r\n\r\n此操作只修改下次启动默认项，不会立即重启电脑。";
-            DialogResult confirmation = MessageBox.Show(
-                "确认将“" + GetEntryConfirmationName(selectedEntry) + "”" + action + "吗？" + consequence,
+            DialogResult confirmation = UiDialogs.Confirm(
+                this,
                 "确认切换",
-                MessageBoxButtons.OKCancel,
-                MessageBoxIcon.Warning,
-                MessageBoxDefaultButton.Button2);
+                "确认将“" + GetEntryConfirmationName(selectedEntry) + "”" + action + "吗？" + consequence,
+                restartAfterSetting ? "切换并重启" : "设为默认");
 
             if (confirmation != DialogResult.OK)
             {
@@ -750,22 +912,20 @@ namespace DualBootSwitcher
                 }
 
                 LoadBootEntries();
-                MessageBox.Show(
-                    "已将“" + GetEntryConfirmationName(selectedEntry) + "”设为默认启动系统。",
-                    Text,
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Information);
+                UiDialogs.ShowInfo(
+                    this,
+                    "默认启动系统已更新",
+                    "已将“" + GetEntryConfirmationName(selectedEntry) + "”设为默认启动系统。");
             }
             catch (Exception exception)
             {
                 string message = defaultWasSet
                     ? "默认启动系统已设置，但自动重启失败。请手动重启电脑。"
                     : "设置默认启动系统失败。";
-                MessageBox.Show(
-                    message + "\r\n\r\n" + exception.Message,
-                    Text,
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Error);
+                UiDialogs.ShowError(
+                    this,
+                    "切换失败",
+                    message + "\r\n\r\n" + exception.Message);
                 UpdateActionButtons();
             }
         }
@@ -778,16 +938,6 @@ namespace DualBootSwitcher
         private static string GetRemarkDisplay(string remark)
         {
             return string.IsNullOrWhiteSpace(remark) ? "未设置" : remark;
-        }
-
-        private void ApplyRemarkCellStyle(DataGridViewCell cell, string remark)
-        {
-            bool hasRemark = !string.IsNullOrWhiteSpace(remark);
-            cell.Style.Font = hasRemark
-                ? emphasizedRemarkFont
-                : bootEntriesGrid.DefaultCellStyle.Font;
-            cell.Style.ForeColor = hasRemark ? UiTheme.Accent : UiTheme.Muted;
-            cell.Style.SelectionForeColor = hasRemark ? UiTheme.Accent : UiTheme.Ink;
         }
 
         private static string GetEntryDisplayName(BootEntry entry)
@@ -804,6 +954,41 @@ namespace DualBootSwitcher
             return string.IsNullOrWhiteSpace(entry.Device)
                 ? displayName
                 : displayName + "（" + entry.Device + "）";
+        }
+
+        private sealed class BootRowViewModel
+        {
+            public BootRowViewModel(BootEntry entry, string remark)
+            {
+                Entry = entry;
+                SystemName = entry.Description;
+                Device = entry.Device;
+                Status = entry.IsDefault ? "当前默认" : "可切换";
+                SetRemark(remark);
+            }
+
+            public BootEntry Entry { get; private set; }
+
+            public string SystemName { get; private set; }
+
+            public string Device { get; private set; }
+
+            public string Remark { get; set; }
+
+            public bool HasRemark { get; private set; }
+
+            public string Status { get; private set; }
+
+            public bool IsDefault
+            {
+                get { return Entry.IsDefault; }
+            }
+
+            public void SetRemark(string remark)
+            {
+                HasRemark = !string.IsNullOrWhiteSpace(remark);
+                Remark = HasRemark ? remark : "未设置";
+            }
         }
     }
 }

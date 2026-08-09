@@ -3,16 +3,16 @@ name: Dual Boot Switcher
 description: A compact Windows utility styled with the ui-modern-dash palette.
 colors:
   brand: "#6366F1"
-  primary-action: "#6265F0"
+  primary-action: "#5B5EE8"
   primary-hover: "#4F46E5"
   primary-pressed: "#4338CA"
   secondary: "#818CF8"
-  selected: "#E0E7FF"
-  canvas: "#F8FAFC"
+  selected: "#EDEFFF"
+  canvas: "#F6F8FC"
   surface: "#FFFFFF"
-  ink: "#1E293B"
-  muted: "#64748B"
-  border: "#E2E8F0"
+  ink: "#1C2536"
+  muted: "#5B687C"
+  border: "#DCE2ED"
   disabled: "#F1F5F9"
 typography:
   headline:
@@ -36,7 +36,7 @@ typography:
     fontWeight: 700
     lineHeight: 1.2
 rounded:
-  surface: "8px"
+  surface: "12px"
   control: "10px"
   badge: "9px"
 motion:
@@ -65,11 +65,19 @@ components:
 
 ## 1. Overview
 
-**Creative North Star: "Modern Dash Control"**
+**Creative North Star: "Modern Boot Control"**
 
 The visual source of truth is the [ui-modern-dash palette](https://www.ysdaima.com/palettes/ui-modern-dash/). Its light slate canvas, white surfaces, indigo actions, pale-indigo selection states, and deep slate typography are mapped onto a compact Windows control surface.
 
-The utility keeps one status surface and one scan-friendly boot table. It borrows the reference's palette, spacing, light header, and restrained rounding without copying its marketing preview or dashboard card density. Rounded surfaces use antialiased GDI+ paths instead of hard control-region clipping. The user-provided dual-boot mark is embedded as both a multi-size ICO and a cropped 256px PNG for sharp title-bar rendering.
+The utility keeps one current-default surface, one scan-friendly AntdUI table, and one selected-system inspector. It borrows the reference's palette, spacing, light header, and restrained rounding without copying its marketing preview or dashboard card density. AntdUI supplies interruptible GDI+ control transitions; the user-provided dual-boot mark is embedded as both a multi-size ICO and a cropped 256px PNG.
+
+### UI Library Decision
+- **AntdUI 2.4.4:** selected as the single control and interaction runtime because it supports .NET Framework 4.0, provides DPI-aware GDI+ controls, and already includes interruptible button, table, input, and modal animation.
+- **FluentTransitions:** evaluated for property transitions, but the current package requires .NET Framework 4.8 and duplicates the state transitions already supplied by AntdUI and `AnimatedLabel`.
+- **WinFormAnimation:** evaluated for keyframe paths; no product workflow needs decorative 2D/3D motion, so adding a second animation clock would increase jitter and cleanup risk without improving task feedback.
+- **CuoreUI:** evaluated for rounded and blurred controls, but it requires .NET Framework 4.7.2 and overlaps AntdUI's control set. Mixing both would break the one-component-vocabulary rule.
+
+The release therefore combines the useful interaction patterns from the evaluated libraries while shipping one visual runtime. This preserves the standalone EXE and avoids conflicting hover, focus, and animation state machines.
 
 ## 2. Colors
 
@@ -118,16 +126,21 @@ Depth is created with `#F8FAFC` behind white surfaces and one-pixel `#E2E8F0` bo
 ## 5. Components
 
 ### Buttons
-- **Shape:** antialiased 10px logical corners, scaled with the drawing DPI, and a fixed 40px logical height.
+- **Shape:** AntdUI-rendered 10px logical corners, DPI-aware drawing, and a 36-42px logical height based on hierarchy.
 - **Primary:** bold white text on Accessible Action Indigo, Hover Indigo on hover, and Pressed Indigo on press.
 - **Secondary:** regular-weight Deep Slate text on a white surface with Slate Border.
 - **Disabled:** pale slate background with written disabled state.
 
 ### Boot Table
-- **Style:** white rows, a Dashboard Canvas header, an antialiased 8px outer boundary, and a full-row selection model.
+- **Style:** white rows, a cool-canvas header, a 12px outer radius, hover feedback, and an animated full-row selection model.
 - **Columns:** boot system, partition, saved purpose remark, and written state.
 - **Weight:** system, partition, and status are bold for scanning; populated remarks use bold Accent text, while `未设置` remains regular Muted text.
 - **State:** the default system receives written status; the selected target eases into the pale-indigo wash.
+
+### Selected System Inspector
+- **Placement:** a stable right-side pane aligned with the boot table.
+- **Content:** system name, partition, written state, prominent purpose remark, and the remark-edit action.
+- **Safety:** default and restart actions remain in the bottom action bar and are disabled for the current default system.
 
 ### Remarks
 - **Entry point:** `编辑备注` button or double-clicking a boot row.

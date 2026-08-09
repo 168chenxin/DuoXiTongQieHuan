@@ -11,6 +11,8 @@ namespace DualBootSwitcher
         [STAThread]
         private static void Main()
         {
+            EmbeddedAssemblyLoader.Register();
+
             if (!IsAdministrator())
             {
                 RequestAdministratorAccess();
@@ -19,6 +21,7 @@ namespace DualBootSwitcher
 
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
+            AntdUiTheme.Configure();
             Application.Run(new MainForm());
         }
 

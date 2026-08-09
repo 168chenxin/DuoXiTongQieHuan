@@ -1,6 +1,6 @@
 # 双系统快速切换
 
-一个可直接复制运行的 Windows 小工具，用于在两个 Windows 引导项之间快速切换。
+一个可直接复制运行的现代 Windows 小工具，用于在多个 Windows 引导项之间快速切换。
 
 ## 下载
 
@@ -11,7 +11,8 @@
 - 适用于 Windows 10 和 Windows 11，使用系统自带的 .NET Framework 4.x；不需要安装 SDK、运行库、DLL 或其他附件。
 - 直接下载并双击 `release\DualBootSwitcher.exe` 即可运行；`release\DualBootSwitcher-portable.zip` 仅用于方便分发和附带说明文件。
 - Logo 和程序图标已嵌入 exe；标题区直接使用内嵌高清 PNG 绘制，不会放大低分辨率 ICO，也不依赖旁边的资源文件。
-- 圆角控件使用抗锯齿绘制；悬停、按压、选择和状态文字采用短缓动，并自动跟随 Windows 的界面动画设置。
+- AntdUI 2.4.4、Logo、许可证和全部运行代码均嵌入 exe，运行时不需要旁边放置 DLL 或其他资源。
+- 表格选择、按钮悬停/按压/加载、输入焦点和状态文字采用短缓动，并自动跟随 Windows 的界面动画设置。
 - 当前便携版未使用商业代码签名证书；从网络下载后若 Windows SmartScreen 提示，请先确认文件来源再选择运行。
 
 ## 管理员权限
@@ -29,6 +30,8 @@
 也可以点击“仅设为默认”，稍后自行重启。
 
 在启动菜单中选中系统后，点击“编辑备注”或双击该行，可以保存“工作”“游戏”“测试”等用途说明。备注只保存在当前 Windows 用户的设置中，不会改动 BCD；换电脑后需要重新设置备注。
+
+选中系统后，右侧详情区会同时显示系统名称、分区、当前状态和用途备注；切换按钮只在目标不是当前默认系统时可用。
 
 “启动等待”按钮显示开机选择系统的当前超时时间。点击后可以设置 `0` 到 `999` 秒，点击“保存修改”后立即生效。设置为 `0` 秒会直接进入默认系统，不再等待选择。
 
@@ -53,6 +56,14 @@
 
 构建产物会生成在 `release\DualBootSwitcher.exe`，便携分发包会生成在 `release\DualBootSwitcher-portable.zip`。GitHub Actions 会在推送 `v*` 标签时自动构建并创建 Release。
 
+首次构建会从 NuGet 下载固定版本的 AntdUI，并校验 SHA-256。该 DLL 只用于编译并会嵌入 exe，最终发布目录不会包含外部 DLL。
+
+## UI 与动画
+
+- 使用 AntdUI 提供统一的 GDI+ 按钮、面板、表格、输入控件和模态提示。
+- 沿用 `ui-modern-dash` 的靛蓝、浅靛蓝、白色和冷灰色层级，不使用渐变文字、玻璃效果或装饰性长动画。
+- 动效只表达悬停、按压、加载、行选择和状态更新；Windows 关闭客户端动画时会同步关闭应用动画。
+
 ## 图标来源
 
 应用 Logo 使用用户提供的 `assets\dual-boot-switcher-logo.png`，构建时会裁掉透明外边距并嵌入多尺寸 ICO。运行时不读取该 PNG。
@@ -60,3 +71,7 @@
 ## UI 配色来源
 
 界面使用 [颜色代码表 ui-modern-dash](https://www.ysdaima.com/palettes/ui-modern-dash/) 的 SaaS Dashboard 配色：`#6366F1`、`#818CF8`、`#E0E7FF`、`#F8FAFC`、`#1E293B`。
+
+## 第三方组件
+
+现代控件由 [AntdUI](https://gitee.com/AntdUI/AntdUI) 提供，版本 `2.4.4`，采用 Apache License 2.0。完整许可证和第三方声明已嵌入 exe，并包含在便携 ZIP 中。

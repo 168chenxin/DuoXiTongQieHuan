@@ -75,6 +75,22 @@ if (-not (Test-Path -LiteralPath $logoPath)) {
 
 Write-Host 'Embedded logo source test passed.'
 
+$antdLicensePath = Join-Path $root 'assets\licenses\AntdUI-Apache-2.0.txt'
+if (-not (Test-Path -LiteralPath $antdLicensePath)) {
+    throw 'The AntdUI Apache 2.0 license is missing.'
+}
+
+if (-not (Select-String -Path $antdLicensePath -Pattern 'Apache License' -Quiet)) {
+    throw 'The AntdUI license file does not contain the Apache License text.'
+}
+
+$thirdPartyNotices = Get-Content -Raw -Encoding UTF8 (Join-Path $root 'assets\THIRD_PARTY_NOTICES.md')
+if (-not $thirdPartyNotices.Contains('AntdUI 2.4.4')) {
+    throw 'Third-party notices must identify the embedded AntdUI version.'
+}
+
+Write-Host 'Embedded UI dependency license test passed.'
+
 [xml]$manifest = Get-Content -Raw -Encoding UTF8 (Join-Path $root 'src\app.manifest')
 $namespaceManager = New-Object System.Xml.XmlNamespaceManager($manifest.NameTable)
 $namespaceManager.AddNamespace('asmv3', 'urn:schemas-microsoft-com:asm.v3')
