@@ -70,6 +70,10 @@ Windows 启动管理器
             FiltersOutLoadersNotInTheBootMenu();
             DoesNotSelectEntriesWithoutBootMenuOrder();
             ComparesIdentifiersWithoutCaseSensitivity();
+            ParsesFirmwareBootSequence();
+            AcceptsReadableOutputFromNonzeroBcdResult();
+            VerifiesAppliedFirmwareBootAfterNonzeroSetResult();
+            VerifiesAppliedDefaultAndTimeoutAfterNonzeroSetResult();
             if (Environment.GetEnvironmentVariable("DUAL_BOOT_SKIP_LIVE_BCD") != "1")
             {
                 ReadsTheActiveBcdStore();
@@ -143,6 +147,61 @@ Windows 启动管理器
         AssertEqual(15, BcdParser.ParseTimeout(BootManagerOutput), "Expected the English timeout.");
         AssertEqual(10, BcdParser.ParseTimeout(ChineseBootManagerOutput), "Expected the Chinese timeout.");
         AssertEqual(-1, BcdParser.ParseTimeout("timeout invalid"), "Expected an invalid timeout to fail parsing.");
+    }
+
+    private static void ParsesFirmwareBootSequence()
+    {
+        const string output = "Firmware Boot Manager\r\n---------------------\r\nidentifier              {fwbootmgr}\r\nbootsequence            {1f96071f-948e-11f1-84b7-806e6f6e6963}\r\ndisplayorder            {bootmgr}";
+        AssertTrue(
+            BcdParser.BootSequenceContains(output, "{1F96071F-948E-11F1-84B7-806E6F6E6963}"),
+            "The verified next firmware boot identifier should be detected without case sensitivity.");
+        AssertTrue(
+            !BcdParser.BootSequenceContains(output, "{00000000-0000-0000-0000-000000000000}"),
+            "A different firmware identifier must not pass verification.");
+    }
+
+    private static void AcceptsReadableOutputFromNonzeroBcdResult()
+    {
+        var result = new BcdCommandResult(1, string.Empty, BootManagerOutput + "\r\n函数不正确。\r\n");
+        AssertTrue(
+            BcdService.CanUseBcdReadOutput(result),
+            "Structured BCD output should remain usable when firmware appends a nonzero status.");
+        AssertEqual(15, BcdParser.ParseTimeout(result.CombinedOutput), "The complete error-stream output should still parse normally.");
+    }
+
+    private static void VerifiesAppliedFirmwareBootAfterNonzeroSetResult()
+    {
+        const string identifier = "{1f96071f-948e-11f1-84b7-806e6f6e6963}";
+        var verification = new BcdCommandResult(
+            1,
+            string.Empty,
+            "固件启动管理器\r\n---------------------\r\n标识符                  {fwbootmgr}\r\n启动顺序                " + identifier + "\r\n函数不正确。\r\n");
+        AssertTrue(
+            BcdService.WasFirmwareBootSequenceApplied(identifier, verification),
+            "A nonzero set result should be accepted only after the target boot sequence is read back.");
+        AssertTrue(
+            !BcdService.WasFirmwareBootSequenceApplied("{other}", verification),
+            "Verification must reject a boot sequence that does not contain the selected entry.");
+    }
+
+    private static void VerifiesAppliedDefaultAndTimeoutAfterNonzeroSetResult()
+    {
+        var verification = new BcdCommandResult(
+            1,
+            string.Empty,
+            BootManagerOutput + "\r\n函数不正确。\r\n");
+        AssertTrue(
+            BcdService.WasDefaultApplied("{62FE5B36-8268-11F1-A95E-FC9D056C3957}", verification),
+            "A default-system write should be accepted after the selected identifier is read back.");
+        AssertTrue(
+            BcdService.WasTimeoutApplied(15, verification),
+            "A timeout write should be accepted after the selected number is read back.");
+        AssertTrue(
+            !BcdService.WasDefaultApplied("{other}", verification),
+            "A different default identifier must fail verification.");
+        AssertTrue(
+            !BcdService.WasTimeoutApplied(30, verification),
+            "A different timeout must fail verification.");
     }
 
     private static void RejectsInvalidTimeoutChanges()

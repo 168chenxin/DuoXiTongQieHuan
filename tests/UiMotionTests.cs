@@ -1,6 +1,7 @@
 using System;
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.Windows.Forms;
 using DualBootSwitcher;
 
 internal static class UiMotionTests
@@ -15,6 +16,9 @@ internal static class UiMotionTests
             UsesDpiScaledDrawing();
             BuildsRoundedGeometry();
             ConfiguresAntialiasedDrawing();
+            AnimatesPaintOffsetWithoutChangingLayout();
+            OverlayAnimationDoesNotChangeParentColor();
+            StopsAnimationWithoutCompletingIt();
             Console.WriteLine("UI motion tests passed.");
             return 0;
         }
@@ -38,10 +42,10 @@ internal static class UiMotionTests
         AssertClose(0.875F, UiMotion.EaseOutCubic(0.5F), "The interaction curve should retain visible motion after its midpoint.");
         AssertClose(1F, UiMotion.EaseOutCubic(1F), "The interaction curve should finish at one.");
         AssertTrue(
-            UiTheme.StateMotionDuration >= 200 && UiTheme.StateMotionDuration <= 250,
-            "State transitions should remain smooth without delaying task flow.");
+            UiTheme.StateMotionDuration >= 150 && UiTheme.StateMotionDuration <= 180,
+            "State transitions should match the OrbiEn interaction timing.");
         AssertTrue(
-            UiTheme.PressMotionDuration >= 100 && UiTheme.PressMotionDuration < UiTheme.StateMotionDuration,
+            UiTheme.PressMotionDuration >= 80 && UiTheme.PressMotionDuration < UiTheme.StateMotionDuration,
             "Press feedback should be immediate and shorter than a state transition.");
         AssertEqual(16, UiTheme.MotionFrameInterval, "Motion should target approximately 60 frames per second.");
     }
@@ -97,6 +101,48 @@ internal static class UiMotionTests
                 graphics.PixelOffsetMode == PixelOffsetMode.HighQuality,
                 "Rounded controls should use high-quality pixel offsets.");
         }
+    }
+
+    private static void AnimatesPaintOffsetWithoutChangingLayout()
+    {
+        using (var control = new Panel { Bounds = new Rectangle(10, 20, 120, 48) })
+        {
+            Rectangle originalBounds = control.Bounds;
+            control.AnimatePaintOffset(8F, 4F, 0);
+            PointF offset = control.GetPaintOffset();
+            AssertClose(8F, offset.X, "Paint offset should reach the requested X value.");
+            AssertClose(4F, offset.Y, "Paint offset should reach the requested Y value.");
+            AssertTrue(control.Bounds == originalBounds, "Paint offset animation must not change layout bounds.");
+        }
+    }
+
+    private static void OverlayAnimationDoesNotChangeParentColor()
+    {
+        using (var control = new Panel { BackColor = Color.CornflowerBlue, Size = new Size(120, 48) })
+        {
+            Color originalColor = control.BackColor;
+            control.AnimateOverlayColor(Color.FromArgb(80, Color.Red), 0);
+            AssertTrue(control.BackColor == originalColor, "Overlay animation must not change the parent BackColor.");
+            AssertEqual(0, control.Controls.Count, "A completed transient overlay should clean itself up.");
+        }
+    }
+
+    private static void StopsAnimationWithoutCompletingIt()
+    {
+        if (!UiMotion.IsEnabled)
+        {
+            return;
+        }
+
+        bool completed = false;
+        int token = UiMotion.Start(
+            delegate(float progress) { },
+            1000,
+            delegate { completed = true; },
+            UiMotion.EaseOutQuart);
+        UiMotion.Stop(token);
+        Application.DoEvents();
+        AssertTrue(!completed, "Stopping an animation must not invoke its completion callback.");
     }
 
     private static void AssertClose(float expected, float actual, string message)

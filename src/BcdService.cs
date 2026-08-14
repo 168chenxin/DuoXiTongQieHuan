@@ -13,10 +13,46 @@ namespace DualBootSwitcher
             return LoadConfiguration().Entries;
         }
 
+        public static List<FirmwareBootEntry> LoadFirmwareEntries()
+        {
+            BcdCommandResult result = RunBcdEditRaw("/enum firmware");
+            List<FirmwareBootEntry> entries = FirmwareBootParser.ParseEntries(result.CombinedOutput);
+            if (result.IsSuccess || entries.Count > 0)
+            {
+                return entries;
+            }
+
+            throw new InvalidOperationException("bcdedit 读取固件启动项失败：" + result.ErrorDetails);
+        }
+
+        public static void SetNextFirmwareBoot(FirmwareBootEntry entry)
+        {
+            if (entry == null || string.IsNullOrWhiteSpace(entry.Identifier))
+            {
+                throw new ArgumentException("请选择一个有效的固件启动项。", "entry");
+            }
+
+            BcdCommandResult setResult = RunBcdEditRaw(
+                "/set {fwbootmgr} bootsequence " + entry.Identifier);
+            if (setResult.IsSuccess)
+            {
+                return;
+            }
+
+            BcdCommandResult verificationResult = RunBcdEditRaw("/enum {fwbootmgr} /v");
+            if (WasFirmwareBootSequenceApplied(entry.Identifier, verificationResult))
+            {
+                return;
+            }
+
+            throw new InvalidOperationException(
+                "bcdedit 设置下一次固件启动失败：" + setResult.ErrorDetails);
+        }
+
         public static BootConfiguration LoadConfiguration()
         {
-            string loaderOutput = RunBcdEdit("/enum osloader /v");
-            string bootManagerOutput = RunBcdEdit("/enum {bootmgr} /v");
+            string loaderOutput = RunBcdEditRead("/enum osloader /v");
+            string bootManagerOutput = RunBcdEditRead("/enum {bootmgr} /v");
             string defaultIdentifier = BcdParser.ParseDefaultIdentifier(bootManagerOutput);
             int timeoutSeconds = BcdParser.ParseTimeout(bootManagerOutput);
             List<BootEntry> discoveredEntries = BcdParser.ParseBootLoaders(loaderOutput);
@@ -56,7 +92,19 @@ namespace DualBootSwitcher
                 throw new ArgumentException("请选择一个有效的启动项。", "entry");
             }
 
-            RunBcdEdit("/default " + entry.Identifier);
+            BcdCommandResult setResult = RunBcdEditRaw("/default " + entry.Identifier);
+            if (setResult.IsSuccess)
+            {
+                return;
+            }
+
+            BcdCommandResult verificationResult = RunBcdEditRaw("/enum {bootmgr} /v");
+            if (WasDefaultApplied(entry.Identifier, verificationResult))
+            {
+                return;
+            }
+
+            throw new InvalidOperationException("bcdedit 设置默认启动项失败：" + setResult.ErrorDetails);
         }
 
         public static void SetTimeout(int seconds)
@@ -69,7 +117,19 @@ namespace DualBootSwitcher
                     "启动菜单超时时间必须在 0 到 999 秒之间。");
             }
 
-            RunBcdEdit("/timeout " + seconds);
+            BcdCommandResult setResult = RunBcdEditRaw("/timeout " + seconds);
+            if (setResult.IsSuccess)
+            {
+                return;
+            }
+
+            BcdCommandResult verificationResult = RunBcdEditRaw("/enum {bootmgr} /v");
+            if (WasTimeoutApplied(seconds, verificationResult))
+            {
+                return;
+            }
+
+            throw new InvalidOperationException("bcdedit 设置启动等待时间失败：" + setResult.ErrorDetails);
         }
 
         public static void RestartComputer()
@@ -128,7 +188,44 @@ namespace DualBootSwitcher
             return selectedEntries;
         }
 
-        private static string RunBcdEdit(string arguments)
+        internal static bool WasFirmwareBootSequenceApplied(
+            string identifier,
+            BcdCommandResult verificationResult)
+        {
+            return verificationResult != null &&
+                BcdParser.BootSequenceContains(verificationResult.CombinedOutput, identifier);
+        }
+
+        internal static bool WasDefaultApplied(string identifier, BcdCommandResult verificationResult)
+        {
+            return verificationResult != null && BcdParser.IdentifiersMatch(
+                BcdParser.ParseDefaultIdentifier(verificationResult.CombinedOutput),
+                identifier);
+        }
+
+        internal static bool WasTimeoutApplied(int seconds, BcdCommandResult verificationResult)
+        {
+            return verificationResult != null &&
+                BcdParser.ParseTimeout(verificationResult.CombinedOutput) == seconds;
+        }
+
+        internal static bool CanUseBcdReadOutput(BcdCommandResult result)
+        {
+            return result != null && !string.IsNullOrWhiteSpace(result.CombinedOutput);
+        }
+
+        private static string RunBcdEditRead(string arguments)
+        {
+            BcdCommandResult result = RunBcdEditRaw(arguments);
+            if (result.IsSuccess || CanUseBcdReadOutput(result))
+            {
+                return result.CombinedOutput;
+            }
+
+            throw new InvalidOperationException("bcdedit 读取失败：" + result.ErrorDetails);
+        }
+
+        private static BcdCommandResult RunBcdEditRaw(string arguments)
         {
             var startInfo = new ProcessStartInfo
             {
@@ -148,15 +245,7 @@ namespace DualBootSwitcher
                 string standardError = process.StandardError.ReadToEnd();
                 process.WaitForExit();
 
-                if (process.ExitCode != 0)
-                {
-                    string details = string.IsNullOrWhiteSpace(standardError)
-                        ? standardOutput
-                        : standardError;
-                    throw new InvalidOperationException("bcdedit 执行失败：" + details.Trim());
-                }
-
-                return standardOutput;
+                return new BcdCommandResult(process.ExitCode, standardOutput, standardError);
             }
         }
     }

@@ -9,7 +9,7 @@ namespace DualBootSwitcher
         {
             AntdUI.Config.Animation = UiMotion.IsEnabled;
             AntdUI.Config.FocusBorderEnabled = true;
-            AntdUI.Config.ShadowEnabled = false;
+            AntdUI.Config.ShadowEnabled = true;
 
             AntdUI.Style.Set(AntdUI.Colour.Primary, UiTheme.Primary);
             AntdUI.Style.Set(AntdUI.Colour.PrimaryColor, UiTheme.Primary);
@@ -48,7 +48,7 @@ namespace DualBootSwitcher
                 ForeActive = isPrimary ? Color.White : UiTheme.Ink,
                 ForeColor = isPrimary ? Color.White : UiTheme.Ink,
                 ForeHover = isPrimary ? Color.White : UiTheme.Ink,
-                Radius = 10,
+                Radius = UiTheme.ControlCornerRadius,
                 Size = new Size(width, 40),
                 Text = text,
                 Type = isPrimary ? AntdUI.TTypeMini.Primary : AntdUI.TTypeMini.Default,
@@ -65,39 +65,40 @@ namespace DualBootSwitcher
             string message,
             string confirmText)
         {
-            AntdUI.Modal.Config config = AntdUI.Modal.config(
+            using (var dialog = new ApplicationDialog(
                 owner,
                 title,
                 message,
-                AntdUI.TType.Warn);
-            config.CancelText = "取消";
-            config.OkText = confirmText;
-            config.OkType = AntdUI.TTypeMini.Primary;
-            config.Width = 460;
-            config.MaskClosable = false;
-            config.DefaultAcceptButton = false;
-            return AntdUI.Modal.open(config);
+                confirmText,
+                true,
+                DialogKind.Warning))
+            {
+                return dialog.ShowDialog(owner);
+            }
         }
 
         public static void ShowError(Form owner, string title, string message)
         {
-            Show(owner, title, message, AntdUI.TType.Error);
+            Show(owner, title, message, DialogKind.Error);
         }
 
         public static void ShowInfo(Form owner, string title, string message)
         {
-            Show(owner, title, message, AntdUI.TType.Info);
+            Show(owner, title, message, DialogKind.Info);
         }
 
-        private static void Show(Form owner, string title, string message, AntdUI.TType icon)
+        private static void Show(Form owner, string title, string message, DialogKind kind)
         {
-            AntdUI.Modal.Config config = AntdUI.Modal.config(owner, title, message, icon);
-            config.CancelText = null;
-            config.OkText = "知道了";
-            config.OkType = AntdUI.TTypeMini.Primary;
-            config.Width = 460;
-            config.MaskClosable = false;
-            AntdUI.Modal.open(config);
+            using (var dialog = new ApplicationDialog(
+                owner,
+                title,
+                message,
+                "知道了",
+                false,
+                kind))
+            {
+                dialog.ShowDialog(owner);
+            }
         }
     }
 }

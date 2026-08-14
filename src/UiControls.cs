@@ -1,73 +1,11 @@
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
-using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
 namespace DualBootSwitcher
 {
-    internal static class UiMotion
-    {
-        private const uint GetClientAreaAnimation = 0x1042;
-
-        [DllImport("user32.dll", SetLastError = true)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        private static extern bool SystemParametersInfo(
-            uint action,
-            uint parameter,
-            [MarshalAs(UnmanagedType.Bool)] ref bool value,
-            uint updateFlags);
-
-        public static bool IsEnabled
-        {
-            get
-            {
-                bool enabled = true;
-                try
-                {
-                    return SystemParametersInfo(GetClientAreaAnimation, 0, ref enabled, 0) && enabled;
-                }
-                catch (DllNotFoundException)
-                {
-                    return false;
-                }
-                catch (EntryPointNotFoundException)
-                {
-                    return false;
-                }
-            }
-        }
-
-        public static float EaseOutQuart(float value)
-        {
-            float clamped = Math.Max(0F, Math.Min(1F, value));
-            float inverse = 1F - clamped;
-            return 1F - (inverse * inverse * inverse * inverse);
-        }
-
-        public static float EaseOutCubic(float value)
-        {
-            float clamped = Math.Max(0F, Math.Min(1F, value));
-            float inverse = 1F - clamped;
-            return 1F - (inverse * inverse * inverse);
-        }
-
-        public static Color Blend(Color from, Color to, float progress)
-        {
-            float clamped = Math.Max(0F, Math.Min(1F, progress));
-            return Color.FromArgb(
-                BlendChannel(from.A, to.A, clamped),
-                BlendChannel(from.R, to.R, clamped),
-                BlendChannel(from.G, to.G, clamped),
-                BlendChannel(from.B, to.B, clamped));
-        }
-
-        private static int BlendChannel(int from, int to, float progress)
-        {
-            return (int)Math.Round(from + ((to - from) * progress));
-        }
-    }
-
     internal static class UiDrawing
     {
         public static GraphicsPath CreateRoundedRectangle(RectangleF bounds, float radius)
@@ -103,6 +41,618 @@ namespace DualBootSwitcher
             }
 
             return graphics.DpiX / 96F;
+        }
+    }
+
+    internal enum NavigationIcon
+    {
+        Systems,
+        Network,
+        Settings,
+        Announcement
+    }
+
+    internal sealed class SidebarNavigationButton : Control
+    {
+        private readonly Timer animationTimer;
+        private readonly NavigationIcon icon;
+        private bool active;
+        private bool hovered;
+        private bool pointerPressed;
+        private float visualProgress;
+        private float startProgress;
+        private float targetProgress;
+        private DateTime animationStartedAt;
+
+        public SidebarNavigationButton(NavigationIcon iconKind)
+        {
+            icon = iconKind;
+            SetStyle(
+                ControlStyles.AllPaintingInWmPaint |
+                ControlStyles.OptimizedDoubleBuffer |
+                ControlStyles.ResizeRedraw |
+                ControlStyles.Selectable |
+                ControlStyles.UserPaint,
+                true);
+            Cursor = Cursors.Hand;
+            AccessibleRole = AccessibleRole.PushButton;
+            Size = new Size(44, 44);
+            TabStop = true;
+            animationTimer = new Timer { Interval = UiTheme.MotionFrameInterval };
+            animationTimer.Tick += OnAnimationTick;
+        }
+
+        public bool Active
+        {
+            get { return active; }
+            set
+            {
+                if (active == value)
+                {
+                    return;
+                }
+
+                active = value;
+                BeginTransition(active || hovered ? 1F : 0F);
+                AccessibleDescription = active ? "当前页面" : string.Empty;
+            }
+        }
+
+        protected override bool IsInputKey(Keys keyData)
+        {
+            if (keyData == Keys.Space || keyData == Keys.Enter)
+            {
+                return true;
+            }
+
+            return base.IsInputKey(keyData);
+        }
+
+        protected override void OnMouseEnter(EventArgs eventArgs)
+        {
+            base.OnMouseEnter(eventArgs);
+            hovered = true;
+            BeginTransition(1F);
+        }
+
+        protected override void OnMouseLeave(EventArgs eventArgs)
+        {
+            base.OnMouseLeave(eventArgs);
+            hovered = false;
+            pointerPressed = false;
+            BeginTransition(active ? 1F : 0F);
+        }
+
+        protected override void OnMouseDown(MouseEventArgs eventArgs)
+        {
+            base.OnMouseDown(eventArgs);
+            if (eventArgs.Button == MouseButtons.Left)
+            {
+                pointerPressed = true;
+                Focus();
+            }
+        }
+
+        protected override void OnMouseUp(MouseEventArgs eventArgs)
+        {
+            bool shouldClick = pointerPressed &&
+                eventArgs.Button == MouseButtons.Left &&
+                ClientRectangle.Contains(eventArgs.Location);
+            pointerPressed = false;
+            base.OnMouseUp(eventArgs);
+            if (shouldClick)
+            {
+                OnClick(EventArgs.Empty);
+            }
+        }
+
+        protected override void OnKeyDown(KeyEventArgs eventArgs)
+        {
+            if (eventArgs.KeyCode == Keys.Space || eventArgs.KeyCode == Keys.Enter)
+            {
+                OnClick(EventArgs.Empty);
+                eventArgs.Handled = true;
+                return;
+            }
+
+            base.OnKeyDown(eventArgs);
+        }
+
+        protected override void OnGotFocus(EventArgs eventArgs)
+        {
+            base.OnGotFocus(eventArgs);
+            Invalidate();
+        }
+
+        protected override void OnLostFocus(EventArgs eventArgs)
+        {
+            base.OnLostFocus(eventArgs);
+            Invalidate();
+        }
+
+        protected override void OnPaintBackground(PaintEventArgs eventArgs)
+        {
+            eventArgs.Graphics.Clear(UiTheme.Header);
+        }
+
+        protected override void OnPaint(PaintEventArgs eventArgs)
+        {
+            UiDrawing.ConfigureQuality(eventArgs.Graphics);
+            float scale = UiDrawing.GetScale(eventArgs.Graphics);
+            RectangleF bounds = new RectangleF(
+                1F * scale,
+                1F * scale,
+                ClientSize.Width - (2F * scale),
+                ClientSize.Height - (2F * scale));
+            Color fill = UiMotion.Blend(UiTheme.Header, UiTheme.AccentSoft, visualProgress);
+            Color stroke = UiMotion.Blend(UiTheme.Muted, UiTheme.Accent, visualProgress);
+            using (GraphicsPath path = UiDrawing.CreateRoundedRectangle(
+                bounds,
+                UiTheme.ControlCornerRadius * scale))
+            using (var brush = new SolidBrush(fill))
+            {
+                eventArgs.Graphics.FillPath(brush, path);
+            }
+
+            DrawIcon(eventArgs.Graphics, stroke, scale);
+            if (Focused && ShowFocusCues)
+            {
+                using (GraphicsPath focusPath = UiDrawing.CreateRoundedRectangle(
+                    new RectangleF(3.5F * scale, 3.5F * scale,
+                        ClientSize.Width - (7F * scale), ClientSize.Height - (7F * scale)),
+                    (UiTheme.ControlCornerRadius - 2) * scale))
+                using (var focusPen = new Pen(UiTheme.Secondary, 1F))
+                {
+                    eventArgs.Graphics.DrawPath(focusPen, focusPath);
+                }
+            }
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                animationTimer.Dispose();
+            }
+
+            base.Dispose(disposing);
+        }
+
+        private void BeginTransition(float target)
+        {
+            animationTimer.Stop();
+            startProgress = visualProgress;
+            targetProgress = target;
+            animationStartedAt = DateTime.UtcNow;
+            if (!IsHandleCreated || !UiMotion.IsEnabled)
+            {
+                visualProgress = target;
+                Invalidate();
+                return;
+            }
+
+            animationTimer.Start();
+        }
+
+        private void OnAnimationTick(object sender, EventArgs eventArgs)
+        {
+            double elapsed = (DateTime.UtcNow - animationStartedAt).TotalMilliseconds;
+            float linear = Math.Min(1F, (float)(elapsed / UiTheme.StateMotionDuration));
+            visualProgress = startProgress +
+                ((targetProgress - startProgress) * UiMotion.EaseOutQuart(linear));
+            if (linear >= 1F)
+            {
+                animationTimer.Stop();
+                visualProgress = targetProgress;
+            }
+
+            Invalidate();
+        }
+
+        private void DrawIcon(Graphics graphics, Color color, float scale)
+        {
+            float left = (ClientSize.Width - (22F * scale)) / 2F;
+            float top = (ClientSize.Height - (22F * scale)) / 2F;
+            using (var pen = new Pen(color, 1.7F * scale))
+            {
+                pen.StartCap = LineCap.Round;
+                pen.EndCap = LineCap.Round;
+                pen.LineJoin = LineJoin.Round;
+                if (icon == NavigationIcon.Systems)
+                {
+                    graphics.DrawRectangle(pen, left + (2F * scale), top + (3F * scale), 18F * scale, 13F * scale);
+                    graphics.DrawLine(pen, left + (8F * scale), top + (20F * scale), left + (14F * scale), top + (20F * scale));
+                    graphics.DrawLine(pen, left + (11F * scale), top + (16F * scale), left + (11F * scale), top + (20F * scale));
+                }
+                else if (icon == NavigationIcon.Network)
+                {
+                    graphics.DrawArc(pen, left + (1F * scale), top + (7F * scale), 10F * scale, 10F * scale, 42F, 276F);
+                    graphics.DrawArc(pen, left + (11F * scale), top + (5F * scale), 10F * scale, 10F * scale, 222F, 276F);
+                    graphics.DrawLine(pen, left + (8F * scale), top + (15F * scale), left + (15F * scale), top + (8F * scale));
+                }
+                else if (icon == NavigationIcon.Settings)
+                {
+                    graphics.DrawEllipse(pen, left + (7F * scale), top + (7F * scale), 8F * scale, 8F * scale);
+                    graphics.DrawEllipse(pen, left + (3F * scale), top + (3F * scale), 16F * scale, 16F * scale);
+                    graphics.DrawLine(pen, left + (11F * scale), top, left + (11F * scale), top + (3F * scale));
+                    graphics.DrawLine(pen, left + (11F * scale), top + (19F * scale), left + (11F * scale), top + (22F * scale));
+                    graphics.DrawLine(pen, left, top + (11F * scale), left + (3F * scale), top + (11F * scale));
+                    graphics.DrawLine(pen, left + (19F * scale), top + (11F * scale), left + (22F * scale), top + (11F * scale));
+                }
+                else
+                {
+                    graphics.DrawRectangle(pen, left + (3F * scale), top + (2F * scale), 16F * scale, 18F * scale);
+                    graphics.DrawLine(pen, left + (7F * scale), top + (7F * scale), left + (15F * scale), top + (7F * scale));
+                    graphics.DrawLine(pen, left + (7F * scale), top + (11F * scale), left + (15F * scale), top + (11F * scale));
+                    graphics.DrawLine(pen, left + (7F * scale), top + (15F * scale), left + (12F * scale), top + (15F * scale));
+                }
+            }
+        }
+    }
+
+    internal sealed class PageTransitionPanel : Panel
+    {
+        private readonly Timer animationTimer;
+        private Control activePage;
+        private DateTime animationStartedAt;
+        private int destinationLeft;
+
+        public PageTransitionPanel()
+        {
+            SetStyle(ControlStyles.OptimizedDoubleBuffer, true);
+            animationTimer = new Timer { Interval = UiTheme.MotionFrameInterval };
+            animationTimer.Tick += OnAnimationTick;
+        }
+
+        public void ShowPage(Control page)
+        {
+            if (page == null || page == activePage)
+            {
+                return;
+            }
+
+            animationTimer.Stop();
+            destinationLeft = 0;
+            foreach (Control control in Controls)
+            {
+                control.Visible = false;
+            }
+
+            activePage = page;
+            activePage.Dock = DockStyle.None;
+            activePage.Size = ClientSize;
+            activePage.Visible = true;
+            activePage.BringToFront();
+            if (!UiMotion.IsEnabled)
+            {
+                activePage.Left = destinationLeft;
+                return;
+            }
+
+            activePage.Left = destinationLeft + 10;
+            animationStartedAt = DateTime.UtcNow;
+            animationTimer.Start();
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                animationTimer.Dispose();
+            }
+
+            base.Dispose(disposing);
+        }
+
+        protected override void OnResize(EventArgs eventArgs)
+        {
+            base.OnResize(eventArgs);
+            if (activePage != null && !activePage.IsDisposed)
+            {
+                activePage.Size = ClientSize;
+            }
+        }
+
+        private void OnAnimationTick(object sender, EventArgs eventArgs)
+        {
+            if (activePage == null || activePage.IsDisposed)
+            {
+                animationTimer.Stop();
+                return;
+            }
+
+            double elapsed = (DateTime.UtcNow - animationStartedAt).TotalMilliseconds;
+            float linear = Math.Min(1F, (float)(elapsed / UiTheme.StateMotionDuration));
+            float eased = UiMotion.EaseOutQuart(linear);
+            activePage.Left = destinationLeft + (int)Math.Round((1F - eased) * 10F);
+            if (linear >= 1F)
+            {
+                animationTimer.Stop();
+                activePage.Left = destinationLeft;
+            }
+        }
+    }
+
+    internal sealed class AppleBootListItem
+    {
+        public object Tag { get; set; }
+        public string Name { get; set; }
+        public string Remark { get; set; }
+        public string Status { get; set; }
+        public bool IsDefault { get; set; }
+    }
+
+    internal sealed class AppleBootListEventArgs : EventArgs
+    {
+        public AppleBootListEventArgs(AppleBootListItem item, int index)
+        {
+            Item = item;
+            Index = index;
+        }
+
+        public AppleBootListItem Item { get; private set; }
+        public int Index { get; private set; }
+    }
+
+    internal sealed class AppleBootList : Control
+    {
+        private readonly List<AppleBootListItem> items = new List<AppleBootListItem>();
+        private int selectedIndex = -1;
+        private int hoveredIndex = -1;
+
+        public AppleBootList()
+        {
+            SetStyle(
+                ControlStyles.AllPaintingInWmPaint |
+                ControlStyles.OptimizedDoubleBuffer |
+                ControlStyles.ResizeRedraw |
+                ControlStyles.Selectable |
+                ControlStyles.UserPaint,
+                true);
+            BackColor = UiTheme.Surface;
+            Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+            TabStop = true;
+        }
+
+        public event EventHandler<AppleBootListEventArgs> ItemSelected;
+        public event EventHandler<AppleBootListEventArgs> ItemDoubleClicked;
+
+        public int RowHeight
+        {
+            get { return 58; }
+        }
+
+        public int HeaderHeight
+        {
+            get { return 34; }
+        }
+
+        public int SelectedIndex
+        {
+            get { return selectedIndex; }
+            set
+            {
+                int next = Math.Max(-1, Math.Min(items.Count - 1, value));
+                if (selectedIndex == next)
+                {
+                    return;
+                }
+
+                selectedIndex = next;
+                Invalidate();
+            }
+        }
+
+        public void SetItems(IEnumerable<AppleBootListItem> source)
+        {
+            items.Clear();
+            if (source != null)
+            {
+                items.AddRange(source);
+            }
+
+            selectedIndex = items.Count == 0 ? -1 : Math.Min(selectedIndex, items.Count - 1);
+            hoveredIndex = -1;
+            Invalidate();
+        }
+
+        public Rectangle GetRemarkBounds(int index)
+        {
+            if (index < 0 || index >= items.Count)
+            {
+                return Rectangle.Empty;
+            }
+
+            int nameWidth = (int)Math.Round(ClientSize.Width * 0.48);
+            int remarkWidth = (int)Math.Round(ClientSize.Width * 0.28);
+            return new Rectangle(
+                nameWidth + 8,
+                HeaderHeight + (index * RowHeight) + 11,
+                Math.Max(100, remarkWidth - 16),
+                RowHeight - 22);
+        }
+
+        protected override void OnPaint(PaintEventArgs eventArgs)
+        {
+            eventArgs.Graphics.Clear(BackColor);
+            UiDrawing.ConfigureQuality(eventArgs.Graphics);
+            DrawHeader(eventArgs.Graphics);
+            for (int index = 0; index < items.Count; index++)
+            {
+                DrawRow(eventArgs.Graphics, items[index], index);
+            }
+        }
+
+        protected override void OnMouseMove(MouseEventArgs eventArgs)
+        {
+            base.OnMouseMove(eventArgs);
+            int next = HitTest(eventArgs.Location);
+            if (next != hoveredIndex)
+            {
+                hoveredIndex = next;
+                Cursor = next >= 0 ? Cursors.Hand : Cursors.Default;
+                Invalidate();
+            }
+        }
+
+        protected override void OnMouseLeave(EventArgs eventArgs)
+        {
+            base.OnMouseLeave(eventArgs);
+            hoveredIndex = -1;
+            Cursor = Cursors.Default;
+            Invalidate();
+        }
+
+        protected override void OnMouseDown(MouseEventArgs eventArgs)
+        {
+            base.OnMouseDown(eventArgs);
+            if (eventArgs.Button != MouseButtons.Left)
+            {
+                return;
+            }
+
+            Focus();
+            int index = HitTest(eventArgs.Location);
+            if (index >= 0)
+            {
+                SelectIndex(index, true);
+            }
+        }
+
+        protected override void OnMouseDoubleClick(MouseEventArgs eventArgs)
+        {
+            base.OnMouseDoubleClick(eventArgs);
+            int index = HitTest(eventArgs.Location);
+            if (index >= 0 && ItemDoubleClicked != null)
+            {
+                ItemDoubleClicked(this, new AppleBootListEventArgs(items[index], index));
+            }
+        }
+
+        protected override bool IsInputKey(Keys keyData)
+        {
+            if (keyData == Keys.Up || keyData == Keys.Down || keyData == Keys.Enter)
+            {
+                return true;
+            }
+
+            return base.IsInputKey(keyData);
+        }
+
+        protected override void OnKeyDown(KeyEventArgs eventArgs)
+        {
+            if (eventArgs.KeyCode == Keys.Up)
+            {
+                SelectIndex(Math.Max(0, selectedIndex - 1), true);
+                eventArgs.Handled = true;
+                return;
+            }
+
+            if (eventArgs.KeyCode == Keys.Down)
+            {
+                SelectIndex(Math.Min(items.Count - 1, selectedIndex + 1), true);
+                eventArgs.Handled = true;
+                return;
+            }
+
+            if (eventArgs.KeyCode == Keys.Enter && selectedIndex >= 0 && ItemDoubleClicked != null)
+            {
+                ItemDoubleClicked(this, new AppleBootListEventArgs(items[selectedIndex], selectedIndex));
+                eventArgs.Handled = true;
+                return;
+            }
+
+            base.OnKeyDown(eventArgs);
+        }
+
+        private void SelectIndex(int index, bool raiseEvent)
+        {
+            if (index < 0 || index >= items.Count)
+            {
+                return;
+            }
+
+            selectedIndex = index;
+            Invalidate();
+            if (raiseEvent && ItemSelected != null)
+            {
+                ItemSelected(this, new AppleBootListEventArgs(items[index], index));
+            }
+        }
+
+        private int HitTest(Point point)
+        {
+            int index = (point.Y - HeaderHeight) / RowHeight;
+            return point.Y >= HeaderHeight && index >= 0 && index < items.Count ? index : -1;
+        }
+
+        private void DrawHeader(Graphics graphics)
+        {
+            using (var font = new Font("Segoe UI", 8.5F, FontStyle.Bold, GraphicsUnit.Point))
+            {
+                TextRenderer.DrawText(graphics, "系统", font,
+                    new Rectangle(12, 0, (int)(Width * 0.48) - 12, HeaderHeight),
+                    UiTheme.Muted, TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding);
+                TextRenderer.DrawText(graphics, "用途", font,
+                    new Rectangle((int)(Width * 0.48), 0, (int)(Width * 0.28), HeaderHeight),
+                    UiTheme.Muted, TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding);
+                TextRenderer.DrawText(graphics, "状态", font,
+                    new Rectangle((int)(Width * 0.76), 0, (int)(Width * 0.24) - 12, HeaderHeight),
+                    UiTheme.Muted, TextFormatFlags.Right | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding);
+            }
+        }
+
+        private void DrawRow(Graphics graphics, AppleBootListItem item, int index)
+        {
+            var rowBounds = new RectangleF(2F, HeaderHeight + (index * RowHeight) + 4F, Width - 4F, RowHeight - 8F);
+            if (index == selectedIndex || index == hoveredIndex)
+            {
+                Color fill = index == selectedIndex ? UiTheme.SelectionStrong : UiTheme.Hover;
+                using (GraphicsPath path = UiDrawing.CreateRoundedRectangle(rowBounds, 10F))
+                using (var brush = new SolidBrush(fill))
+                {
+                    graphics.FillPath(brush, path);
+                }
+            }
+
+            int textTop = (int)rowBounds.Top;
+            using (var nameFont = new Font("Segoe UI", 9.5F, FontStyle.Bold, GraphicsUnit.Point))
+            using (var metaFont = new Font("Segoe UI", 8.5F, FontStyle.Regular, GraphicsUnit.Point))
+            {
+                TextRenderer.DrawText(graphics, item.Name ?? string.Empty, nameFont,
+                    new Rectangle(14, textTop, (int)(Width * 0.46) - 14, (int)rowBounds.Height),
+                    UiTheme.Ink, TextFormatFlags.Left | TextFormatFlags.VerticalCenter |
+                    TextFormatFlags.EndEllipsis | TextFormatFlags.NoPadding);
+
+                Rectangle remarkBounds = GetRemarkBounds(index);
+                string remark = string.IsNullOrWhiteSpace(item.Remark) ? "未设置" : item.Remark;
+                Size remarkSize = TextRenderer.MeasureText(remark, metaFont, Size.Empty, TextFormatFlags.NoPadding);
+                int pillWidth = Math.Min(remarkBounds.Width, remarkSize.Width + 20);
+                var pillBounds = new RectangleF(remarkBounds.Left, remarkBounds.Top, pillWidth, remarkBounds.Height);
+                using (GraphicsPath pillPath = UiDrawing.CreateRoundedRectangle(pillBounds, 9F))
+                using (var pillBrush = new SolidBrush(string.IsNullOrWhiteSpace(item.Remark)
+                    ? UiTheme.Disabled
+                    : UiTheme.AccentSoft))
+                {
+                    graphics.FillPath(pillBrush, pillPath);
+                }
+                TextRenderer.DrawText(graphics, remark, metaFont,
+                    Rectangle.Round(pillBounds), string.IsNullOrWhiteSpace(item.Remark) ? UiTheme.Muted : UiTheme.Accent,
+                    TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter |
+                    TextFormatFlags.EndEllipsis | TextFormatFlags.NoPadding);
+
+                int dotX = (int)(Width * 0.78);
+                int dotY = textTop + ((int)rowBounds.Height / 2) - 3;
+                using (var dotBrush = new SolidBrush(item.IsDefault ? UiTheme.Success : Color.FromArgb(148, 163, 184)))
+                {
+                    graphics.FillEllipse(dotBrush, dotX, dotY, 7, 7);
+                }
+                TextRenderer.DrawText(graphics, item.Status ?? string.Empty, metaFont,
+                    new Rectangle(dotX + 13, textTop, Width - dotX - 22, (int)rowBounds.Height),
+                    item.IsDefault ? UiTheme.Success : UiTheme.Muted,
+                    TextFormatFlags.Right | TextFormatFlags.VerticalCenter |
+                    TextFormatFlags.EndEllipsis | TextFormatFlags.NoPadding);
+            }
         }
     }
 
@@ -343,10 +893,9 @@ namespace DualBootSwitcher
 
     internal sealed class AnimatedLabel : Label
     {
-        private readonly Timer animationTimer;
+        private int animationToken;
         private string previousText = string.Empty;
         private string targetText = string.Empty;
-        private DateTime animationStartedAt;
         private float animationProgress = 1F;
         private Color backdropColor = UiTheme.Canvas;
 
@@ -357,11 +906,8 @@ namespace DualBootSwitcher
                 ControlStyles.OptimizedDoubleBuffer |
                 ControlStyles.SupportsTransparentBackColor |
                 ControlStyles.UserPaint,
-                true);
+            true);
             base.BackColor = Color.Transparent;
-
-            animationTimer = new Timer { Interval = UiTheme.MotionFrameInterval };
-            animationTimer.Tick += OnAnimationTick;
         }
 
         public Color BackdropColor
@@ -386,7 +932,8 @@ namespace DualBootSwitcher
 
             if (!IsHandleCreated || !UiMotion.IsEnabled || string.IsNullOrEmpty(targetText))
             {
-                animationTimer.Stop();
+                UiMotion.Stop(animationToken);
+                animationToken = 0;
                 previousText = string.Empty;
                 targetText = newText;
                 animationProgress = 1F;
@@ -397,8 +944,28 @@ namespace DualBootSwitcher
             previousText = targetText;
             targetText = newText;
             animationProgress = 0F;
-            animationStartedAt = DateTime.UtcNow;
-            animationTimer.Start();
+            UiMotion.Stop(animationToken);
+            animationToken = UiMotion.Start(
+                delegate(float progress)
+                {
+                    animationProgress = progress;
+                    if (!IsDisposed)
+                    {
+                        Invalidate();
+                    }
+                },
+                UiTheme.StateMotionDuration,
+                delegate
+                {
+                    animationToken = 0;
+                    previousText = string.Empty;
+                    animationProgress = 1F;
+                    if (!IsDisposed)
+                    {
+                        Invalidate();
+                    }
+                },
+                UiMotion.EaseOutCubic);
             Invalidate();
         }
 
@@ -415,7 +982,7 @@ namespace DualBootSwitcher
                 return;
             }
 
-            float eased = UiMotion.EaseOutCubic(animationProgress);
+            float eased = animationProgress;
             DrawText(
                 eventArgs.Graphics,
                 previousText,
@@ -432,23 +999,11 @@ namespace DualBootSwitcher
         {
             if (disposing)
             {
-                animationTimer.Dispose();
+                UiMotion.Stop(animationToken);
+                animationToken = 0;
             }
 
             base.Dispose(disposing);
-        }
-
-        private void OnAnimationTick(object sender, EventArgs eventArgs)
-        {
-            double elapsed = (DateTime.UtcNow - animationStartedAt).TotalMilliseconds;
-            animationProgress = Math.Min(1F, (float)(elapsed / UiTheme.StateMotionDuration));
-            if (animationProgress >= 1F)
-            {
-                animationTimer.Stop();
-                previousText = string.Empty;
-            }
-
-            Invalidate();
         }
 
         private void DrawText(Graphics graphics, string value, Color color, int verticalOffset)

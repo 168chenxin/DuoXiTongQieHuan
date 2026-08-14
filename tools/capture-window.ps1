@@ -31,6 +31,7 @@ public static class WindowCaptureNative
 
     [DllImport("user32.dll")]
     public static extern bool PrintWindow(IntPtr window, IntPtr deviceContext, uint flags);
+
 }
 '@
 

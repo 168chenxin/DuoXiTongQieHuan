@@ -3,7 +3,7 @@ using System.Windows.Forms;
 
 namespace DualBootSwitcher
 {
-    internal sealed class RemarkDialog : Form
+    internal sealed class RemarkDialog : StyledDialogForm
     {
         private readonly AntdUI.Input remarkInput;
 
@@ -11,7 +11,6 @@ namespace DualBootSwitcher
         {
             Text = "编辑启动项备注";
             StartPosition = FormStartPosition.CenterParent;
-            FormBorderStyle = FormBorderStyle.FixedDialog;
             ClientSize = new Size(460, 230);
             MaximizeBox = false;
             MinimizeBox = false;
@@ -25,7 +24,7 @@ namespace DualBootSwitcher
                 Back = UiTheme.Surface,
                 BorderColor = UiTheme.Border,
                 BorderWidth = 1F,
-                Radius = 12,
+                Radius = UiTheme.SurfaceCornerRadius,
                 Location = new Point(16, 16),
                 Size = new Size(428, 158)
             };
@@ -64,7 +63,7 @@ namespace DualBootSwitcher
                 Font = new Font("Segoe UI", 10F, FontStyle.Regular, GraphicsUnit.Point),
                 Location = new Point(18, 76),
                 MaxLength = 48,
-                Radius = 10,
+                Radius = UiTheme.ControlCornerRadius,
                 Size = new Size(388, 42),
                 Text = initialRemark ?? string.Empty
             };
@@ -74,7 +73,7 @@ namespace DualBootSwitcher
             surface.Controls.Add(remarkInput);
 
             AntdUI.Button cancelButton = UiFactory.CreateButton("取消", 104, false);
-            cancelButton.Location = new Point(228, 186);
+            cancelButton.Location = new Point(220, 186);
             cancelButton.Size = new Size(104, 36);
             cancelButton.DialogResult = DialogResult.Cancel;
 
@@ -94,6 +93,7 @@ namespace DualBootSwitcher
                 remarkInput.Focus();
                 remarkInput.SelectAll();
             };
+            CompleteDialogLayout();
         }
 
         public string Remark

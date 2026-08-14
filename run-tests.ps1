@@ -18,8 +18,11 @@ $testExecutable = Join-Path $outputDirectory 'BcdParserTests.exe'
 & $compiler /nologo /utf8output /codepage:65001 /target:exe "/out:$testExecutable" `
     /r:System.dll `
     "$root\src\BcdModels.cs" `
+    "$root\src\BcdCommandResult.cs" `
     "$root\src\BcdParser.cs" `
     "$root\src\BcdService.cs" `
+    "$root\src\FirmwareBootModels.cs" `
+    "$root\src\FirmwareBootParser.cs" `
     "$root\src\BootTimeoutWorkflow.cs" `
     "$root\tests\BcdParserTests.cs"
 
@@ -33,11 +36,49 @@ if ($LASTEXITCODE -ne 0) {
     throw "Tests failed with exit code $LASTEXITCODE."
 }
 
+$firmwareTestExecutable = Join-Path $outputDirectory 'FirmwareBootParserTests.exe'
+
+& $compiler /nologo /utf8output /codepage:65001 /target:exe "/out:$firmwareTestExecutable" `
+    /r:System.dll `
+    "$root\src\FirmwareBootModels.cs" `
+    "$root\src\FirmwareBootParser.cs" `
+    "$root\tests\FirmwareBootParserTests.cs"
+
+if ($LASTEXITCODE -ne 0) {
+    throw "Firmware boot parser test compilation failed with exit code $LASTEXITCODE."
+}
+
+& $firmwareTestExecutable
+
+if ($LASTEXITCODE -ne 0) {
+    throw "Firmware boot parser tests failed with exit code $LASTEXITCODE."
+}
+
+$announcementTestExecutable = Join-Path $outputDirectory 'AnnouncementParserTests.exe'
+
+& $compiler /nologo /utf8output /codepage:65001 /target:exe "/out:$announcementTestExecutable" `
+    /r:System.dll `
+    "$root\src\AnnouncementModels.cs" `
+    "$root\src\AnnouncementParser.cs" `
+    "$root\tests\AnnouncementParserTests.cs"
+
+if ($LASTEXITCODE -ne 0) {
+    throw "Announcement parser test compilation failed with exit code $LASTEXITCODE."
+}
+
+& $announcementTestExecutable
+
+if ($LASTEXITCODE -ne 0) {
+    throw "Announcement parser tests failed with exit code $LASTEXITCODE."
+}
+
 $uiTestExecutable = Join-Path $outputDirectory 'UiMotionTests.exe'
 
 & $compiler /nologo /utf8output /codepage:65001 /target:exe "/out:$uiTestExecutable" `
     /r:System.dll /r:System.Drawing.dll /r:System.Windows.Forms.dll `
     "$root\src\UiTheme.cs" `
+    "$root\src\UiMotion.cs" `
+    "$root\src\UiMotionExtensions.cs" `
     "$root\src\UiControls.cs" `
     "$root\tests\UiMotionTests.cs"
 
@@ -62,8 +103,12 @@ $antdUiTestExecutable = Join-Path $dependencyDirectory 'AntdUiThemeTests.exe'
 & $compiler /nologo /utf8output /codepage:65001 /target:exe "/out:$antdUiTestExecutable" `
     /r:System.dll /r:System.Drawing.dll /r:System.Windows.Forms.dll "/r:$antdUiAssembly" `
     "$root\src\UiTheme.cs" `
+    "$root\src\UiMotion.cs" `
+    "$root\src\UiMotionExtensions.cs" `
     "$root\src\UiControls.cs" `
     "$root\src\AntdUiTheme.cs" `
+    "$root\src\StyledDialogForm.cs" `
+    "$root\src\ApplicationDialog.cs" `
     "$root\tests\AntdUiThemeTests.cs"
 
 if ($LASTEXITCODE -ne 0) {
@@ -74,6 +119,23 @@ if ($LASTEXITCODE -ne 0) {
 
 if ($LASTEXITCODE -ne 0) {
     throw "AntdUI theme tests failed with exit code $LASTEXITCODE."
+}
+
+$updateTestExecutable = Join-Path $outputDirectory 'UpdateServiceTests.exe'
+
+& $compiler /nologo /utf8output /codepage:65001 /target:exe "/out:$updateTestExecutable" `
+    /r:System.dll /r:System.Runtime.Serialization.dll `
+    "$root\src\UpdateService.cs" `
+    "$root\tests\UpdateServiceTests.cs"
+
+if ($LASTEXITCODE -ne 0) {
+    throw "Update service test compilation failed with exit code $LASTEXITCODE."
+}
+
+& $updateTestExecutable
+
+if ($LASTEXITCODE -ne 0) {
+    throw "Update service tests failed with exit code $LASTEXITCODE."
 }
 
 $remarkTestExecutable = Join-Path $outputDirectory 'BootRemarkStoreTests.exe'
@@ -115,6 +177,21 @@ if (-not $thirdPartyNotices.Contains('AntdUI 2.4.4')) {
 }
 
 Write-Host 'Embedded UI dependency license test passed.'
+
+$orbienLicensePath = Join-Path $root 'assets\licenses\OrbiEn-Apache-2.0.txt'
+if (-not (Test-Path -LiteralPath $orbienLicensePath)) {
+    throw 'The OrbiEn Apache 2.0 license is missing.'
+}
+
+if (-not (Select-String -Path $orbienLicensePath -Pattern 'Apache License' -Quiet)) {
+    throw 'The OrbiEn license file does not contain the Apache License text.'
+}
+
+if (-not $thirdPartyNotices.Contains('OrbiEn Desktop')) {
+    throw 'Third-party notices must identify the adapted OrbiEn Desktop design.'
+}
+
+Write-Host 'OrbiEn design attribution test passed.'
 
 [xml]$manifest = Get-Content -Raw -Encoding UTF8 (Join-Path $root 'src\app.manifest')
 $namespaceManager = New-Object System.Xml.XmlNamespaceManager($manifest.NameTable)

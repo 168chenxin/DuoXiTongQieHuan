@@ -4,7 +4,7 @@ using System.Windows.Forms;
 
 namespace DualBootSwitcher
 {
-    internal sealed class TimeoutDialog : Form
+    internal sealed class TimeoutDialog : StyledDialogForm
     {
         private readonly AntdUI.InputNumber timeoutInput;
 
@@ -12,7 +12,6 @@ namespace DualBootSwitcher
         {
             Text = "修改启动等待时间";
             StartPosition = FormStartPosition.CenterParent;
-            FormBorderStyle = FormBorderStyle.FixedDialog;
             ClientSize = new Size(460, 246);
             MaximizeBox = false;
             MinimizeBox = false;
@@ -26,7 +25,7 @@ namespace DualBootSwitcher
                 Back = UiTheme.Surface,
                 BorderColor = UiTheme.Border,
                 BorderWidth = 1F,
-                Radius = 12,
+                Radius = UiTheme.SurfaceCornerRadius,
                 Location = new Point(16, 16),
                 Size = new Size(428, 174)
             };
@@ -75,7 +74,7 @@ namespace DualBootSwitcher
                 Location = new Point(108, 69),
                 Maximum = 999,
                 Minimum = 0,
-                Radius = 10,
+                Radius = UiTheme.ControlCornerRadius,
                 ShowControl = true,
                 Size = new Size(132, 40),
                 TextAlign = HorizontalAlignment.Center,
@@ -111,7 +110,7 @@ namespace DualBootSwitcher
             surface.Controls.Add(warningLabel);
 
             AntdUI.Button cancelButton = UiFactory.CreateButton("取消", 104, false);
-            cancelButton.Location = new Point(228, 202);
+            cancelButton.Location = new Point(220, 202);
             cancelButton.Size = new Size(104, 36);
             cancelButton.DialogResult = DialogResult.Cancel;
 
@@ -131,6 +130,7 @@ namespace DualBootSwitcher
                 timeoutInput.Focus();
                 timeoutInput.Select(0, timeoutInput.Text.Length);
             };
+            CompleteDialogLayout();
         }
 
         public int TimeoutSeconds

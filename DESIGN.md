@@ -1,18 +1,19 @@
 ---
 name: Dual Boot Switcher
-description: A compact Windows utility styled with the ui-modern-dash palette.
+description: A single-page Windows boot dashboard guided by macOS HIG principles.
 colors:
-  brand: "#6366F1"
-  primary-action: "#5B5EE8"
-  primary-hover: "#4F46E5"
-  primary-pressed: "#4338CA"
-  secondary: "#818CF8"
-  selected: "#EDEFFF"
-  canvas: "#F6F8FC"
+  brand: "#3B82F6"
+  primary-action: "#3B82F6"
+  primary-hover: "#2563EB"
+  primary-pressed: "#1D4ED8"
+  secondary: "#60A5FA"
+  selected: "#EFF6FF"
+  canvas: "#F0F5FA"
   surface: "#FFFFFF"
-  ink: "#1C2536"
-  muted: "#5B687C"
-  border: "#DCE2ED"
+  chrome: "#F7FAFC"
+  ink: "#1E293B"
+  muted: "#475569"
+  border: "#E2E8F0"
   disabled: "#F1F5F9"
 typography:
   headline:
@@ -36,12 +37,13 @@ typography:
     fontWeight: 700
     lineHeight: 1.2
 rounded:
-  surface: "12px"
-  control: "10px"
-  badge: "9px"
+  workspace: "12px"
+  surface: "8-10px"
+  control: "8px"
+  badge: "8px"
 motion:
-  press: "100ms"
-  state: "180ms"
+  press: "90ms"
+  state: "160ms"
   easing: "ease-out-quart"
   reducedMotion: "Windows client-area animation setting"
 spacing:
@@ -65,11 +67,11 @@ components:
 
 ## 1. Overview
 
-**Creative North Star: "Modern Boot Control"**
+**Creative North Star: "Desktop Boot Console"**
 
-The visual source of truth is the [ui-modern-dash palette](https://www.ysdaima.com/palettes/ui-modern-dash/). Its light slate canvas, white surfaces, indigo actions, pale-indigo selection states, and deep slate typography are mapped onto a compact Windows control surface.
+The current information architecture follows macOS HIG principles: one full-width integrated dashboard, progressive disclosure for advanced network boot, clear selection focus, restrained material layers, and contextual actions. OrbiEn remains an attributed visual reference for its blue token set and compact desktop proportions.
 
-The utility keeps one current-default surface, one scan-friendly AntdUI table, and one selected-system inspector. It borrows the reference's palette, spacing, light header, and restrained rounding without copying its marketing preview or dashboard card density. AntdUI supplies interruptible GDI+ control transitions; the user-provided dual-boot mark is embedded as both a multi-size ICO and a cropped 256px PNG.
+The utility presents system management in one page without a navigation sidebar. The top Banner fuses the default boot environment with a structured project activity area for announcement and update status. The network boot card sits directly below the Banner as a fixed-height, three-column advanced-startup workspace: detection state, firmware parameters, and actions. Detection replaces the content in place and never moves the system workspace. The lower 64:36 region combines a custom rounded-row system list and a compact Inspector. Boot timeout lives in the list toolbar, so there is no separate preferences page or overlay.
 
 ### UI Library Decision
 - **AntdUI 2.4.4:** selected as the single control and interaction runtime because it supports .NET Framework 4.0, provides DPI-aware GDI+ controls, and already includes interruptible button, table, input, and modal animation.
@@ -81,26 +83,26 @@ The release therefore combines the useful interaction patterns from the evaluate
 
 ## 2. Colors
 
-The five reference colors are `#6366F1`, `#818CF8`, `#E0E7FF`, `#F8FAFC`, and `#1E293B`. Slate support colors from the same UI family provide readable secondary text and borders.
+The reference colors are `#3B82F6`, `#2563EB`, `#60A5FA`, `#F0F5FA`, `#F7FAFC`, `#FFFFFF`, `#1E293B`, and `#E2E8F0`.
 
 ### Primary
-- **Dashboard Indigo** (`#6366F1`): product mark, focus identity, and active state.
-- **Accessible Action Indigo** (`#6265F0`): one-step darkened action fill so white button text reaches WCAG AA.
-- **Hover Indigo** (`#4F46E5`): primary hover and text-on-pale-indigo state.
-- **Pressed Indigo** (`#4338CA`): primary press feedback.
+- **OrbiEn Blue** (`#3B82F6`): product mark, focus identity, and active state.
+- **Strong Blue** (`#2563EB`): primary hover and text-on-pale-blue state.
+- **Pressed Blue** (`#1D4ED8`): primary press feedback.
 
 ### Secondary
-- **Soft Indigo** (`#818CF8`): secondary brand detail in the application icon.
-- **Selected Indigo Wash** (`#E0E7FF`): selected boot row, administrator badge, and partition metadata background.
+- **Muted Blue** (`#60A5FA`): focus ring and secondary active detail.
+- **Selected Blue Wash** (`#EFF6FF`): selected boot row and partition metadata background.
 
 ### Neutral
-- **Dashboard Canvas** (`#F8FAFC`): application background and table header.
+- **Work Canvas** (`#F0F5FA`): application background and table header.
+- **Chrome** (`#F7FAFC`): auxiliary material and inspector background.
 - **Clear Surface** (`#FFFFFF`): header, status panel, data rows, and secondary buttons.
 - **Deep Slate** (`#1E293B`): primary text.
 - **Slate Label** (`#64748B`): secondary text and disabled labels.
 - **Slate Border** (`#E2E8F0`): dividers and control boundaries.
 
-**The Indigo Restraint Rule.** Indigo is reserved for the logo, primary action, selected row, and explicit status. It is not general decoration.
+**The Blue Restraint Rule.** Blue is reserved for the logo, active navigation, primary action, selected row, and explicit status. It is not general decoration.
 
 ## 3. Typography
 
@@ -126,13 +128,18 @@ Depth is created with `#F8FAFC` behind white surfaces and one-pixel `#E2E8F0` bo
 ## 5. Components
 
 ### Buttons
-- **Shape:** AntdUI-rendered 10px logical corners, DPI-aware drawing, and a 36-42px logical height based on hierarchy.
-- **Primary:** bold white text on Accessible Action Indigo, Hover Indigo on hover, and Pressed Indigo on press.
+- **Shape:** AntdUI-rendered 8px logical corners, DPI-aware drawing, and a 36-42px logical height based on hierarchy.
+- **Primary:** bold white text on OrbiEn Blue, Strong Blue on hover, and Pressed Blue on press.
 - **Secondary:** regular-weight Deep Slate text on a white surface with Slate Border.
 - **Disabled:** pale slate background with written disabled state.
 
+### Dialogs
+- **Window shell:** every application-owned dialog uses the shared 12px rounded frame, cool chrome title bar, one-pixel Slate Border, and the same Canvas background as the dashboard.
+- **Hierarchy:** dialog content uses white 12px-radius surfaces, 24-28px outer spacing, Segoe UI headings, and the shared primary/secondary button vocabulary.
+- **Compatibility:** Windows 11 receives the native rounded-window preference; the clipped window region preserves the same corner shape on Windows 10.
+
 ### Boot Table
-- **Style:** white rows, a cool-canvas header, a 12px outer radius, hover feedback, and an animated full-row selection model.
+- **Style:** white rows, a cool-canvas header, an 8px outer radius, hover feedback, and an animated full-row selection model.
 - **Columns:** boot system, partition, saved purpose remark, and written state.
 - **Weight:** system, partition, and status are bold for scanning; populated remarks use bold Accent text, while `未设置` remains regular Muted text.
 - **State:** the default system receives written status; the selected target eases into the pale-indigo wash.
@@ -159,22 +166,22 @@ Depth is created with `#F8FAFC` behind white surfaces and one-pixel `#E2E8F0` bo
 
 ## 6. Motion
 
-- **Timing:** 100ms for press depth and 180ms for hover, enable/disable, row selection, and status text changes.
+- **Timing:** 90ms for press depth and 160ms for hover, navigation, page change, enable/disable, row selection, and status text changes.
 - **Easing:** ease-out-quart, with no bounce, elastic motion, or decorative entrance sequence.
-- **Performance:** timers update only the active control and stop at completion; controls use double-buffered painting.
+- **Performance:** one shared 16ms scheduler drives token-based, interruptible state transitions; controls use double-buffered painting, and canceled animations release their callbacks without changing layout bounds.
 - **Reduced motion:** when Windows disables client-area animations, every state is applied immediately.
 
 ## 7. Do's and Don'ts
 
 ### Do:
-- **Do** use the exact five-color reference palette as the visual anchor.
-- **Do** keep at least 28px outer spacing and one clear primary action.
-- **Do** pair indigo state color with written labels such as `当前默认` and `可切换`.
-- **Do** keep the embedded user-provided dual-boot mark at a stable 46px title-bar size with transparent corners.
+- **Do** use the OrbiEn blue token set and integrated top Banner as the visual anchor.
+- **Do** keep 24px working-area spacing and one clear primary action.
+- **Do** pair blue state color with written labels such as `当前默认` and `可切换`.
+- **Do** keep the embedded user-provided dual-boot mark as the application and executable icon.
 - **Do** reserve motion for feedback and state continuity.
 
 ### Don't:
 - **Don't** copy the reference site's marketing Hero, advertisements, or card-heavy dashboard composition.
-- **Don't** introduce colors outside the indigo and slate families without semantic need.
+- **Don't** introduce colors outside the blue and slate families without semantic need.
 - **Don't** use gradient text, glass effects, neon glow, or saturated inactive controls.
 - **Don't** add page-load choreography, bouncing, or animation longer than 250ms.

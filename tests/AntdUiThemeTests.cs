@@ -9,6 +9,7 @@ internal static class AntdUiThemeTests
         try
         {
             SecondaryButtonsKeepReadableInteractionColors();
+            DialogsUseUnifiedRoundedChrome();
             Console.WriteLine("AntdUI theme tests passed.");
             return 0;
         }
@@ -16,6 +17,28 @@ internal static class AntdUiThemeTests
         {
             Console.Error.WriteLine(exception.Message);
             return 1;
+        }
+    }
+
+    private static void DialogsUseUnifiedRoundedChrome()
+    {
+        using (var dialog = new ApplicationDialog(
+            null,
+            "操作提示",
+            "用于验证统一窗口外壳。",
+            "知道了",
+            false,
+            DialogKind.Info))
+        {
+            if (dialog.FormBorderStyle != System.Windows.Forms.FormBorderStyle.None)
+            {
+                throw new InvalidOperationException("Application dialogs must use unified rounded chrome.");
+            }
+
+            if (dialog.Padding.All != 1)
+            {
+                throw new InvalidOperationException("Application dialogs must preserve the unified one-pixel frame.");
+            }
         }
     }
 
