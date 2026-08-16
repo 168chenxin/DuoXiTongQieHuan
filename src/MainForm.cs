@@ -34,6 +34,7 @@ namespace DualBootSwitcher
         private AntButton setDefaultButton;
         private AntButton setDefaultAndRestartButton;
         private AntButton detectNetworkBootButton;
+        private AntButton restartToFirmwareButton;
         private AntButton announcementButton;
         private AntButton updateButton;
         private AntPanel defaultBand;
@@ -59,7 +60,6 @@ namespace DualBootSwitcher
         private AntTag networkBootStatusTag;
         private Label networkBootSummaryLabel;
         private Label networkBootDetailsLabel;
-        private Label networkBootActionHintLabel;
         private AntButton networkBootStartButton;
         private AntdUI.Input inlineRemarkInput;
         private BootRowViewModel inlineRemarkRow;
@@ -69,6 +69,7 @@ namespace DualBootSwitcher
         private RoundedLabel dashboardDefaultDeviceBadge;
         private FirmwareBootEntry inlineNetworkBootEntry;
         private bool isApplyingInlineNetworkBoot;
+        private bool isRestartingToFirmware;
         private const int NetworkBootCardHeight = 144;
         private readonly List<BootRowViewModel> bootRows = new List<BootRowViewModel>();
         private Icon applicationIcon;
@@ -388,7 +389,7 @@ namespace DualBootSwitcher
             SetActionButtonsEnabled(false);
             FormClosing += delegate(object sender, FormClosingEventArgs eventArgs)
             {
-                if (isApplyingInlineNetworkBoot)
+                if (isApplyingInlineNetworkBoot || isRestartingToFirmware)
                 {
                     eventArgs.Cancel = true;
                     return;
@@ -943,6 +944,16 @@ namespace DualBootSwitcher
             detectNetworkBootButton.Click -= delegate { ShowNetworkBootDetection(); };
             detectNetworkBootButton.Click += async delegate { await DetectInlineNetworkBootAsync(); };
 
+            restartToFirmwareButton = UiFactory.CreateFirmwareActionButton("进入 BIOS", 98);
+            restartToFirmwareButton.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            restartToFirmwareButton.Location = new Point(772, 38);
+            restartToFirmwareButton.Size = new Size(98, 38);
+            restartToFirmwareButton.AccessibleName = "重启进入 BIOS 设置";
+            interfaceToolTip.SetToolTip(
+                restartToFirmwareButton,
+                "重启电脑并进入 UEFI 或 BIOS 设置，不修改启动顺序或固件参数");
+            restartToFirmwareButton.Click += async delegate { await RestartToFirmwareSettingsAsync(); };
+
             networkBootDetailsLabel = new Label
             {
                 Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right,
@@ -955,19 +966,6 @@ namespace DualBootSwitcher
                 Size = new Size(330, 72),
                 Text = "尚未检测\r\n检测后将在此显示固件 GUID、设备参数和 EFI 路径。",
                 Visible = true
-            };
-            networkBootActionHintLabel = new Label
-            {
-                Anchor = AnchorStyles.Top | AnchorStyles.Right,
-                AutoSize = false,
-                BackColor = UiTheme.Surface,
-                Font = new Font("Segoe UI", 8.5F, FontStyle.Regular, GraphicsUnit.Point),
-                ForeColor = UiTheme.Muted,
-                Location = new Point(694, 60),
-                Size = new Size(138, 18),
-                Text = "确认参数后再启动",
-                TextAlign = ContentAlignment.MiddleCenter,
-                Visible = false
             };
             networkBootStartButton = UiFactory.CreateButton("启动网维无盘", 170, true);
             networkBootStartButton.IconSvg = null;
@@ -1009,7 +1007,7 @@ namespace DualBootSwitcher
                 Font = new Font("Segoe UI", 8.5F, FontStyle.Bold, GraphicsUnit.Point),
                 ForeColor = UiTheme.Muted,
                 Location = new Point(694, 18),
-                Text = "启动操作"
+                Text = "网维与固件"
             };
 
             networkBootCard.Controls.Add(icon);
@@ -1019,10 +1017,10 @@ namespace DualBootSwitcher
             networkBootCard.Controls.Add(parameterDivider);
             networkBootCard.Controls.Add(parameterLabel);
             networkBootCard.Controls.Add(detectNetworkBootButton);
+            networkBootCard.Controls.Add(restartToFirmwareButton);
             networkBootCard.Controls.Add(networkBootDetailsLabel);
             networkBootCard.Controls.Add(actionDivider);
             networkBootCard.Controls.Add(actionLabel);
-            networkBootCard.Controls.Add(networkBootActionHintLabel);
             networkBootCard.Controls.Add(networkBootStartButton);
             dashboardContent.Controls.Add(networkBootCard);
         }
@@ -1057,18 +1055,20 @@ namespace DualBootSwitcher
             networkBootCard.Location = new Point(24, networkTop);
             networkBootCard.Size = new Size(usableWidth, networkHeight);
             int networkInfoWidth = Math.Max(250, (int)Math.Round(usableWidth * 0.27));
-            int networkActionWidth = 210;
+            int networkActionWidth = 232;
             int detailsLeft = networkInfoWidth + 34;
             int detailsRight = usableWidth - networkActionWidth - 22;
             networkBootSummaryLabel.Size = new Size(Math.Max(170, networkInfoWidth - 76), 24);
             networkBootStatusTag.Location = new Point(62, 76);
-            detectNetworkBootButton.Location = new Point(usableWidth - networkActionWidth + 12, 38);
-            detectNetworkBootButton.Size = new Size(networkActionWidth - 24, 38);
+            int actionLeft = usableWidth - networkActionWidth + 12;
+            int actionButtonWidth = (networkActionWidth - 30) / 2;
+            detectNetworkBootButton.Location = new Point(actionLeft, 38);
+            detectNetworkBootButton.Size = new Size(actionButtonWidth, 38);
+            restartToFirmwareButton.Location = new Point(actionLeft + actionButtonWidth + 6, 38);
+            restartToFirmwareButton.Size = new Size(actionButtonWidth, 38);
             networkBootDetailsLabel.Location = new Point(detailsLeft, 38);
             networkBootDetailsLabel.Size = new Size(Math.Max(250, detailsRight - detailsLeft - 14), 72);
-            networkBootActionHintLabel.Location = new Point(usableWidth - networkActionWidth + 12, 66);
-            networkBootActionHintLabel.Size = new Size(networkActionWidth - 24, 18);
-            networkBootStartButton.Location = new Point(usableWidth - networkActionWidth + 12, 88);
+            networkBootStartButton.Location = new Point(actionLeft, 88);
             networkBootStartButton.Size = new Size(networkActionWidth - 24, 42);
             foreach (Control control in networkBootCard.Controls)
             {
@@ -1472,6 +1472,42 @@ namespace DualBootSwitcher
                         ? "下一次网维启动已经设置，请保存工作后手动重启电脑。"
                         : "没有修改永久 BIOS 启动顺序，请检查主板固件兼容性。") +
                     "\r\n\r\n" + exception.Message);
+            }
+        }
+
+        private async Task RestartToFirmwareSettingsAsync()
+        {
+            DialogResult confirmation = UiDialogs.Confirm(
+                this,
+                "确认进入 BIOS 设置",
+                "电脑将立即重启并尝试进入 UEFI/BIOS 设置。\r\n\r\n此操作不会修改默认启动系统、网维无盘配置或 BIOS 参数。请先保存所有正在进行的工作。",
+                "重启进入 BIOS");
+            if (confirmation != DialogResult.OK)
+            {
+                return;
+            }
+
+            isRestartingToFirmware = true;
+            restartToFirmwareButton.Enabled = false;
+            restartToFirmwareButton.Loading = true;
+            restartToFirmwareButton.Text = "正在重启...";
+            try
+            {
+                await Task.Run((Action)BcdService.RestartToFirmwareSettings);
+                isRestartingToFirmware = false;
+                Close();
+            }
+            catch (Exception exception)
+            {
+                isRestartingToFirmware = false;
+                restartToFirmwareButton.Loading = false;
+                restartToFirmwareButton.Text = "进入 BIOS";
+                restartToFirmwareButton.Enabled = true;
+                UiDialogs.ShowError(
+                    this,
+                    "无法进入 BIOS 设置",
+                    "当前电脑可能未使用 UEFI 启动，或固件不支持从 Windows 直接进入设置。\r\n\r\n" +
+                    "你仍可在开机时使用主板提示的快捷键进入 BIOS。\r\n\r\n" + exception.Message);
             }
         }
 

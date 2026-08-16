@@ -9,6 +9,7 @@ internal static class AntdUiThemeTests
         try
         {
             SecondaryButtonsKeepReadableInteractionColors();
+            FirmwareActionUsesDistinctWarningColors();
             DialogsUseUnifiedRoundedChrome();
             Console.WriteLine("AntdUI theme tests passed.");
             return 0;
@@ -17,6 +18,17 @@ internal static class AntdUiThemeTests
         {
             Console.Error.WriteLine(exception.Message);
             return 1;
+        }
+    }
+
+    private static void FirmwareActionUsesDistinctWarningColors()
+    {
+        using (AntdUI.Button button = UiFactory.CreateFirmwareActionButton("进入 BIOS", 98))
+        {
+            AssertColor(UiTheme.FirmwareAction, button.BackColor, "Firmware action needs a distinct default color.");
+            AssertColor(UiTheme.FirmwareActionHover, button.BackHover, "Firmware action hover must remain distinct.");
+            AssertColor(UiTheme.FirmwareActionPressed, button.BackActive, "Firmware action press must remain distinct.");
+            AssertColor(Color.White, button.ForeColor, "Firmware action text must remain readable.");
         }
     }
 

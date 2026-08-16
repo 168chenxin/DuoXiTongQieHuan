@@ -8,6 +8,8 @@ namespace DualBootSwitcher
 {
     internal static class BcdService
     {
+        internal const string FirmwareSetupRestartArguments = "/r /fw /t 0";
+
         public static List<BootEntry> LoadEntries()
         {
             return LoadConfiguration().Entries;
@@ -134,10 +136,20 @@ namespace DualBootSwitcher
 
         public static void RestartComputer()
         {
+            RunShutdown("/r /t 0", "自动重启失败");
+        }
+
+        public static void RestartToFirmwareSettings()
+        {
+            RunShutdown(FirmwareSetupRestartArguments, "重启进入 UEFI/BIOS 设置失败");
+        }
+
+        private static void RunShutdown(string arguments, string failureMessage)
+        {
             var startInfo = new ProcessStartInfo
             {
                 FileName = Path.Combine(Environment.SystemDirectory, "shutdown.exe"),
-                Arguments = "/r /t 0",
+                Arguments = arguments,
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
@@ -157,7 +169,7 @@ namespace DualBootSwitcher
                     string details = string.IsNullOrWhiteSpace(standardError)
                         ? standardOutput
                         : standardError;
-                    throw new InvalidOperationException("自动重启失败：" + details.Trim());
+                    throw new InvalidOperationException(failureMessage + "：" + details.Trim());
                 }
             }
         }

@@ -30,6 +30,28 @@ namespace DualBootSwitcher
 
     internal static class UiFactory
     {
+        public static AntdUI.Button CreateFirmwareActionButton(string text, int width)
+        {
+            return new AntdUI.Button
+            {
+                AutoEllipsis = true,
+                BackActive = UiTheme.FirmwareActionPressed,
+                BackColor = UiTheme.FirmwareAction,
+                BackHover = UiTheme.FirmwareActionHover,
+                BorderWidth = 0F,
+                DefaultBorderColor = Color.Transparent,
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold, GraphicsUnit.Point),
+                ForeActive = Color.White,
+                ForeColor = Color.White,
+                ForeHover = Color.White,
+                Radius = UiTheme.ControlCornerRadius,
+                Size = new Size(width, 40),
+                Text = text,
+                Type = AntdUI.TTypeMini.Warn,
+                WaveSize = UiMotion.IsEnabled ? 4 : 0
+            };
+        }
+
         public static AntdUI.Button CreateButton(string text, int width, bool isPrimary)
         {
             return new AntdUI.Button

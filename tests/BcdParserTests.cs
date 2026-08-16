@@ -74,6 +74,7 @@ Windows 启动管理器
             AcceptsReadableOutputFromNonzeroBcdResult();
             VerifiesAppliedFirmwareBootAfterNonzeroSetResult();
             VerifiesAppliedDefaultAndTimeoutAfterNonzeroSetResult();
+            UsesWindowsFirmwareSetupRestartArguments();
             if (Environment.GetEnvironmentVariable("DUAL_BOOT_SKIP_LIVE_BCD") != "1")
             {
                 ReadsTheActiveBcdStore();
@@ -202,6 +203,14 @@ Windows 启动管理器
         AssertTrue(
             !BcdService.WasTimeoutApplied(30, verification),
             "A different timeout must fail verification.");
+    }
+
+    private static void UsesWindowsFirmwareSetupRestartArguments()
+    {
+        AssertEqual(
+            "/r /fw /t 0",
+            BcdService.FirmwareSetupRestartArguments,
+            "Firmware setup should use Windows shutdown /fw without forcing applications to close.");
     }
 
     private static void RejectsInvalidTimeoutChanges()

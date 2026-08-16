@@ -38,6 +38,9 @@ namespace DualBootSwitcher
         public static readonly Color SuccessSoft = Color.FromArgb(240, 253, 244);
         public static readonly Color Warning = Color.FromArgb(190, 73, 45);
         public static readonly Color WarningSoft = Color.FromArgb(255, 247, 237);
+        public static readonly Color FirmwareAction = Color.FromArgb(180, 83, 9);
+        public static readonly Color FirmwareActionHover = Color.FromArgb(146, 64, 14);
+        public static readonly Color FirmwareActionPressed = Color.FromArgb(120, 53, 15);
         public static readonly Color Disabled = Color.FromArgb(241, 245, 249);
         public static readonly Color DisabledText = Color.FromArgb(100, 116, 139);
     }
