@@ -392,6 +392,9 @@ namespace DualBootSwitcher
         private readonly List<AppleBootListItem> items = new List<AppleBootListItem>();
         private int selectedIndex = -1;
         private int hoveredIndex = -1;
+        private int previousSelectedIndex = -1;
+        private float selectionProgress = 1F;
+        private int selectionAnimationToken;
 
         public AppleBootList()
         {
@@ -431,7 +434,9 @@ namespace DualBootSwitcher
                     return;
                 }
 
+                previousSelectedIndex = selectedIndex;
                 selectedIndex = next;
+                StartSelectionFeedback();
                 Invalidate();
             }
         }
@@ -445,8 +450,23 @@ namespace DualBootSwitcher
             }
 
             selectedIndex = items.Count == 0 ? -1 : Math.Min(selectedIndex, items.Count - 1);
+            previousSelectedIndex = -1;
+            selectionProgress = 1F;
+            UiMotion.Stop(selectionAnimationToken);
+            selectionAnimationToken = 0;
             hoveredIndex = -1;
             Invalidate();
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                UiMotion.Stop(selectionAnimationToken);
+                selectionAnimationToken = 0;
+            }
+
+            base.Dispose(disposing);
         }
 
         public Rectangle GetRemarkBounds(int index)
@@ -565,7 +585,9 @@ namespace DualBootSwitcher
                 return;
             }
 
+            previousSelectedIndex = selectedIndex;
             selectedIndex = index;
+            StartSelectionFeedback();
             Invalidate();
             if (raiseEvent && ItemSelected != null)
             {
@@ -577,6 +599,40 @@ namespace DualBootSwitcher
         {
             int index = (point.Y - HeaderHeight) / RowHeight;
             return point.Y >= HeaderHeight && index >= 0 && index < items.Count ? index : -1;
+        }
+
+        private void StartSelectionFeedback()
+        {
+            UiMotion.Stop(selectionAnimationToken);
+            selectionAnimationToken = 0;
+            selectionProgress = UiMotion.IsEnabled ? 0F : 1F;
+            if (!UiMotion.IsEnabled)
+            {
+                return;
+            }
+
+            selectionAnimationToken = UiMotion.Start(
+                delegate(float progress)
+                {
+                    if (IsDisposed)
+                    {
+                        return;
+                    }
+
+                    selectionProgress = progress;
+                    Invalidate();
+                },
+                UiTheme.StateMotionDuration,
+                delegate
+                {
+                    selectionAnimationToken = 0;
+                    selectionProgress = 1F;
+                    if (!IsDisposed)
+                    {
+                        Invalidate();
+                    }
+                },
+                UiMotion.EaseOutQuart);
         }
 
         private void DrawHeader(Graphics graphics)
@@ -598,13 +654,40 @@ namespace DualBootSwitcher
         private void DrawRow(Graphics graphics, AppleBootListItem item, int index)
         {
             var rowBounds = new RectangleF(2F, HeaderHeight + (index * RowHeight) + 4F, Width - 4F, RowHeight - 8F);
-            if (index == selectedIndex || index == hoveredIndex)
+            bool isSelected = index == selectedIndex;
+            bool isPreviousSelected = index == previousSelectedIndex &&
+                previousSelectedIndex >= 0 && previousSelectedIndex != selectedIndex;
+            if (isSelected || isPreviousSelected || index == hoveredIndex)
             {
-                Color fill = index == selectedIndex ? UiTheme.SelectionStrong : UiTheme.Hover;
+                Color fill;
+                if (isSelected)
+                {
+                    fill = UiMotion.Blend(UiTheme.Surface, UiTheme.AccentSoft, selectionProgress);
+                }
+                else if (isPreviousSelected)
+                {
+                    fill = UiMotion.Blend(UiTheme.AccentSoft, UiTheme.Surface, selectionProgress);
+                }
+                else
+                {
+                    fill = UiTheme.Hover;
+                }
                 using (GraphicsPath path = UiDrawing.CreateRoundedRectangle(rowBounds, 10F))
                 using (var brush = new SolidBrush(fill))
                 {
                     graphics.FillPath(brush, path);
+                }
+
+                if (isSelected)
+                {
+                    using (var markerBrush = new SolidBrush(UiTheme.Accent))
+                    {
+                        graphics.FillRectangle(markerBrush,
+                            (int)rowBounds.Left,
+                            (int)rowBounds.Top + 8,
+                            3,
+                            (int)rowBounds.Height - 16);
+                    }
                 }
             }
 

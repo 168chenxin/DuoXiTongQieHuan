@@ -19,6 +19,7 @@ internal static class UiMotionTests
             ConfiguresAntialiasedDrawing();
             AnimatesPaintOffsetWithoutChangingLayout();
             OverlayAnimationDoesNotChangeParentColor();
+            AppleBootListKeepsRowsStableWhileSelecting();
             StopsAnimationWithoutCompletingIt();
             Console.WriteLine("UI motion tests passed.");
             return 0;
@@ -161,6 +162,24 @@ internal static class UiMotionTests
         UiMotion.Stop(token);
         Application.DoEvents();
         AssertTrue(!completed, "Stopping an animation must not invoke its completion callback.");
+    }
+
+    private static void AppleBootListKeepsRowsStableWhileSelecting()
+    {
+        using (var control = new AppleBootList { Bounds = new Rectangle(10, 20, 520, 220) })
+        {
+            control.SetItems(new[]
+            {
+                new AppleBootListItem { Name = "Windows 11", Status = "当前默认" },
+                new AppleBootListItem { Name = "Windows 10", Status = "可切换" }
+            });
+            control.SelectedIndex = 0;
+            Rectangle originalBounds = control.Bounds;
+            control.SelectedIndex = 1;
+            AssertEqual(58, control.RowHeight, "Boot list rows should keep the approved stable height.");
+            AssertEqual(34, control.HeaderHeight, "Boot list headers should keep the approved stable height.");
+            AssertTrue(control.Bounds == originalBounds, "Selecting a boot row must not change layout bounds.");
+        }
     }
 
     private static void AssertClose(float expected, float actual, string message)
