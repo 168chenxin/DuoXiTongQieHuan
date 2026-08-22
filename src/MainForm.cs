@@ -790,7 +790,7 @@ namespace DualBootSwitcher
             selectionPanel.BorderWidth = 0F;
             selectionPanel.Radius = UiTheme.WorkspaceCornerRadius;
             selectionPanel.Shadow = 8;
-            selectionPanel.ShadowColor = Color.FromArgb(55, 85, 125);
+            selectionPanel.ShadowColor = UiTheme.Border;
             selectionPanel.ShadowOffsetY = 2;
             selectionPanel.ShadowOpacity = 0.07F;
             SetSelectionPanelBackdrop(UiTheme.Surface);
@@ -821,7 +821,7 @@ namespace DualBootSwitcher
                 BorderWidth = 0F,
                 Radius = UiTheme.WorkspaceCornerRadius,
                 Shadow = 8,
-                ShadowColor = Color.FromArgb(55, 85, 125),
+                ShadowColor = UiTheme.Border,
                 ShadowOffsetY = 2,
                 ShadowOpacity = 0.07F
             };
@@ -868,26 +868,51 @@ namespace DualBootSwitcher
                 return;
             }
 
-            int width = Math.Max(760, dashboardContent.ClientSize.Width);
-            int usableWidth = width - 48;
+            int width = dashboardContent.ClientSize.Width;
+            int height = dashboardContent.ClientSize.Height;
+            int outerMargin = 24;
             int cardGap = 16;
-            int bannerHeight = 140;
+            int bannerHeight = 124;
             int coreTop = 20 + bannerHeight + cardGap;
-            int availableCoreHeight = dashboardContent.ClientSize.Height - coreTop - 20;
-            int coreHeight = Math.Max(296, availableCoreHeight);
-            int leftWidth = (int)Math.Round((usableWidth - cardGap) * 0.64);
-            int rightWidth = usableWidth - cardGap - leftWidth;
+            int usableWidth = Math.Max(0, width - (outerMargin * 2));
+            int availableCoreHeight = Math.Max(0, height - coreTop - 20);
+            const int minimumListWidth = 300;
+            const int minimumInspectorWidth = 264;
+            bool stacked = usableWidth < minimumListWidth + cardGap + minimumInspectorWidth;
+            int leftWidth;
+            int rightWidth;
+            int listHeight;
+            int inspectorHeight;
 
-            dashboardContent.AutoScroll = availableCoreHeight < 296;
-            dashboardContent.AutoScrollMinSize = dashboardContent.AutoScroll
-                ? new Size(0, coreTop + 316)
-                : Size.Empty;
+            if (stacked)
+            {
+                leftWidth = usableWidth;
+                rightWidth = usableWidth;
+                listHeight = 346;
+                inspectorHeight = 326;
+                dashboardContent.AutoScroll = true;
+                dashboardContent.AutoScrollMinSize = new Size(
+                    Math.Max(width, outerMargin * 2 + 1),
+                    coreTop + listHeight + cardGap + inspectorHeight + 24);
+            }
+            else
+            {
+                leftWidth = Math.Max(minimumListWidth,
+                    (int)Math.Round((usableWidth - cardGap) * 0.64));
+                rightWidth = Math.Max(minimumInspectorWidth,
+                    usableWidth - cardGap - leftWidth);
+                listHeight = Math.Max(296, availableCoreHeight);
+                inspectorHeight = listHeight;
+                dashboardContent.AutoScroll = false;
+                dashboardContent.AutoScrollMinSize = Size.Empty;
+            }
+
             systemsWorkspacePanel.Location = new Point(24, 20);
             systemsWorkspacePanel.Size = new Size(usableWidth, bannerHeight);
             LayoutDashboardBanner(usableWidth);
 
             systemListCard.Location = new Point(24, coreTop);
-            systemListCard.Size = new Size(leftWidth, coreHeight);
+            systemListCard.Size = new Size(Math.Max(0, leftWidth), listHeight);
             bootMenuLabel.Location = new Point(20, 16);
             entryCountLabel.Location = new Point(20, 43);
             entryCountLabel.Size = new Size(110, 24);
@@ -895,52 +920,66 @@ namespace DualBootSwitcher
             refreshButton.Text = "刷新";
             refreshButton.IconSvg = null;
             refreshButton.Padding = Padding.Empty;
-            timeoutButton.Location = new Point(leftWidth - 222, 20);
+            timeoutButton.Location = new Point(Math.Max(20, leftWidth - 222), 20);
             timeoutButton.Size = new Size(122, 38);
-            refreshButton.Location = new Point(leftWidth - 90, 20);
+            refreshButton.Location = new Point(Math.Max(20, leftWidth - 90), 20);
             refreshButton.Size = new Size(70, 38);
             appleBootList.Location = new Point(18, 76);
-            appleBootList.Size = new Size(leftWidth - 36, coreHeight - 92);
+            appleBootList.Size = new Size(
+                Math.Max(0, leftWidth - 36),
+                Math.Max(0, listHeight - 92));
 
-            selectionPanel.Location = new Point(24 + leftWidth + cardGap, coreTop);
-            selectionPanel.Size = new Size(rightWidth, coreHeight);
-            LayoutDashboardInspector(rightWidth, coreHeight);
+            selectionPanel.Location = stacked
+                ? new Point(24, coreTop + listHeight + cardGap)
+                : new Point(24 + leftWidth + cardGap, coreTop);
+            selectionPanel.Size = new Size(Math.Max(0, rightWidth), inspectorHeight);
+            LayoutDashboardInspector(Math.Max(0, rightWidth), inspectorHeight);
         }
 
         private void LayoutDashboardBanner(int width)
         {
-            int announcementWidth = Math.Max(400, (int)Math.Round(width * 0.45));
-            int dividerX = width - announcementWidth;
-            defaultBand.Width = Math.Max(320, dividerX - 40);
-            currentDefaultNameLabel.Width = Math.Max(220, defaultBand.Width - 20);
-            string currentName = currentDefaultNameLabel.Text ?? string.Empty;
-            int nameWidth = TextRenderer.MeasureText(
-                currentName,
-                currentDefaultNameLabel.Font,
-                Size.Empty,
-                TextFormatFlags.NoPadding).Width;
-            int badgeLeft = Math.Min(defaultBand.Width - 76, Math.Max(190, nameWidth + 14));
-            currentDefaultNameLabel.Width = Math.Max(160, badgeLeft - 8);
-            if (nextBootNameLabel != null)
-            {
-                nextBootNameLabel.Width = Math.Max(120, dividerX - defaultBand.Right - 54);
-                nextBootDeviceBadge.Location = new Point(nextBootNameLabel.Left, 74);
-            }
+            int safeWidth = Math.Max(0, width);
+            int announcementWidth = Math.Max(252, (int)Math.Round(safeWidth * 0.32));
+            int announcementLeft = Math.Max(520, safeWidth - announcementWidth);
+            int defaultWidth = Math.Max(250, Math.Min(300, announcementLeft - 44));
+            int nextLeft = defaultWidth + 46;
+            int nextWidth = Math.Max(130, announcementLeft - nextLeft - 24);
+
+            defaultBand.Location = new Point(20, 18);
+            defaultBand.Size = new Size(defaultWidth, 88);
+            currentDefaultNameLabel.Location = new Point(0, 39);
+            currentDefaultNameLabel.Size = new Size(Math.Max(120, defaultWidth - 104), 30);
+            currentDefaultDeviceTag.Location = new Point(Math.Max(0, defaultWidth - 92), 68);
+
             foreach (Control control in systemsWorkspacePanel.Controls)
             {
-                if (control.Width == 1)
+                var label = control as Label;
+                if (label != null && label.Text == "下次启动")
                 {
-                    bool isSectionDivider = control.Height > 1;
-                    if (isSectionDivider)
-                    {
-                        control.Location = new Point(dividerX, 18);
-                        control.Height = systemsWorkspacePanel.Height - 36;
-                    }
+                    label.Location = new Point(nextLeft, 20);
+                }
+            }
+            if (nextBootNameLabel != null)
+            {
+                nextBootNameLabel.Location = new Point(nextLeft, 42);
+                nextBootNameLabel.Size = new Size(nextWidth, 28);
+            }
+            if (nextBootDeviceBadge != null)
+            {
+                nextBootDeviceBadge.Location = new Point(nextLeft, 74);
+            }
+
+            foreach (Control control in systemsWorkspacePanel.Controls)
+            {
+                if (control.Width == 1 && control.Height > 1)
+                {
+                    control.Location = new Point(announcementLeft - 20, 18);
+                    control.Height = Math.Max(1, systemsWorkspacePanel.Height - 36);
                 }
             }
 
-            int sectionLeft = dividerX + 28;
-            int sectionRight = width - 20;
+            int sectionLeft = announcementLeft + 8;
+            int sectionRight = Math.Max(sectionLeft + 180, safeWidth - 20);
             foreach (Control control in systemsWorkspacePanel.Controls)
             {
                 var rounded = control as RoundedLabel;
@@ -955,21 +994,25 @@ namespace DualBootSwitcher
                 }
                 if (control is Panel && control.Height == 1)
                 {
-                    control.Location = new Point(sectionLeft, 105);
-                    control.Width = Math.Max(180, sectionRight - sectionLeft);
+                    control.Location = new Point(sectionLeft, 104);
+                    control.Width = Math.Max(1, sectionRight - sectionLeft);
                 }
             }
-            announcementButton.Location = new Point(sectionRight - announcementButton.Width, 15);
-            announcementTitleLabel.Location = new Point(sectionLeft, 51);
-            announcementTitleLabel.Size = new Size(Math.Max(200, sectionRight - sectionLeft), 24);
-            announcementDateLabel.Location = new Point(sectionLeft, 79);
-            announcementDateLabel.Size = new Size(Math.Max(200, sectionRight - sectionLeft), 20);
-            updateStatusLabel.Location = new Point(sectionLeft, 110);
-            updateStatusLabel.Size = new Size(Math.Max(180, sectionRight - sectionLeft), 21);
+            announcementButton.Location = new Point(
+                Math.Max(sectionLeft, sectionRight - announcementButton.Width), 15);
+            announcementTitleLabel.Location = new Point(sectionLeft, 50);
+            announcementTitleLabel.Size = new Size(Math.Max(120, sectionRight - sectionLeft), 24);
+            announcementDateLabel.Location = new Point(sectionLeft, 76);
+            announcementDateLabel.Size = new Size(Math.Max(120, sectionRight - sectionLeft), 20);
+            updateStatusLabel.Location = new Point(sectionLeft, 108);
+            updateStatusLabel.Size = new Size(Math.Max(120, sectionRight - sectionLeft), 21);
         }
 
         private void LayoutDashboardInspector(int width, int height)
         {
+            int safeWidth = Math.Max(0, width);
+            int safeHeight = Math.Max(160, height);
+            int contentWidth = Math.Max(1, safeWidth - 40);
             foreach (Control control in selectionPanel.Controls)
             {
                 var label = control as Label;
@@ -984,7 +1027,7 @@ namespace DualBootSwitcher
             }
 
             selectedNameLabel.Location = new Point(72, 39);
-            selectedNameLabel.Size = new Size(Math.Max(120, width - 92), 32);
+            selectedNameLabel.Size = new Size(Math.Max(1, safeWidth - 92), 32);
             selectedDeviceTag.Location = new Point(20, 84);
             selectedStateTag.Location = new Point(106, 84);
             foreach (Control control in selectionPanel.Controls)
@@ -992,24 +1035,25 @@ namespace DualBootSwitcher
                 if (control is Panel && control.Height == 1)
                 {
                     control.Location = new Point(20, 126);
-                    control.Width = width - 40;
+                    control.Width = contentWidth;
                 }
             }
 
             selectedRemarkLabel.Location = new Point(20, 158);
-            selectedRemarkLabel.Size = new Size(width - 40, 26);
-            inspectorActionPanel.Location = new Point(14, height - 100);
-            inspectorActionPanel.Size = new Size(width - 28, 88);
+            selectedRemarkLabel.Size = new Size(contentWidth, 26);
+            inspectorActionPanel.Location = new Point(14, Math.Max(0, safeHeight - 100));
+            inspectorActionPanel.Size = new Size(Math.Max(1, safeWidth - 28), 88);
             inspectorActionPanel.BringToFront();
             actionStatusLabel.BackdropColor = UiTheme.Surface;
             actionStatusLabel.Location = new Point(6, 5);
-            actionStatusLabel.Size = new Size(inspectorActionPanel.Width - 12, 23);
+            actionStatusLabel.Size = new Size(Math.Max(1, inspectorActionPanel.Width - 12), 23);
             actionStatusLabel.TextAlign = ContentAlignment.MiddleLeft;
             setDefaultButton.Location = new Point(6, 34);
-            setDefaultButton.Size = new Size(Math.Max(96, (inspectorActionPanel.Width - 24) / 2), 40);
+            int actionWidth = Math.Max(1, inspectorActionPanel.Width - 24);
+            setDefaultButton.Size = new Size(Math.Max(1, actionWidth / 2), 40);
             setDefaultAndRestartButton.Location = new Point(setDefaultButton.Right + 12, 34);
             setDefaultAndRestartButton.Size = new Size(
-                inspectorActionPanel.Width - setDefaultButton.Right - 18,
+                Math.Max(1, inspectorActionPanel.Width - setDefaultButton.Right - 18),
                 40);
         }
 
