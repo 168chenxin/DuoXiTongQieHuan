@@ -21,6 +21,8 @@ namespace DualBootSwitcher
         private AppleBootList appleBootList;
         private AnimatedLabel currentDefaultNameLabel;
         private AntTag currentDefaultDeviceTag;
+        private AnimatedLabel nextBootNameLabel;
+        private RoundedLabel nextBootDeviceBadge;
         private AnimatedLabel entryCountLabel;
         private AnimatedLabel actionStatusLabel;
         private AnimatedLabel selectedNameLabel;
@@ -57,7 +59,6 @@ namespace DualBootSwitcher
         private Label announcementTitleLabel;
         private Label announcementDateLabel;
         private Label updateStatusLabel;
-        private RoundedLabel dashboardDefaultDeviceBadge;
         private readonly List<BootRowViewModel> bootRows = new List<BootRowViewModel>();
         private Icon applicationIcon;
         private Image applicationLogo;
@@ -544,59 +545,77 @@ namespace DualBootSwitcher
             systemsWorkspacePanel = new AntPanel
             {
                 Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right,
-                Back = UiTheme.BannerStart,
-                BackExtend = "135deg, " + ColorTranslator.ToHtml(UiTheme.BannerStart) + ", " +
-                    ColorTranslator.ToHtml(UiTheme.BannerEnd),
-                BorderWidth = 0F,
+                Back = UiTheme.Surface,
+                BorderColor = UiTheme.Border,
+                BorderWidth = 1F,
                 Location = new Point(24, 20),
-                Radius = UiTheme.WorkspaceCornerRadius,
-                Shadow = 8,
-                ShadowColor = Color.FromArgb(55, 85, 125),
-                ShadowOffsetY = 2,
-                ShadowOpacity = 0.08F,
-                Size = new Size(832, 140)
+                Radius = 10,
+                Shadow = 5,
+                ShadowColor = UiTheme.Border,
+                ShadowOffsetY = 1,
+                ShadowOpacity = 0.12F,
+                Size = new Size(832, 124)
             };
 
             defaultBand.Location = new Point(20, 18);
-            defaultBand.Size = new Size(460, 104);
+            defaultBand.Size = new Size(270, 88);
             defaultBand.Anchor = AnchorStyles.Top | AnchorStyles.Left;
-            defaultBand.Back = UiTheme.BannerStart;
+            defaultBand.Back = UiTheme.Surface;
             defaultBand.BorderWidth = 0F;
             defaultBand.Radius = 0;
-            currentDefaultNameLabel.BackdropColor = UiTheme.BannerStart;
-            currentDefaultNameLabel.Font = new Font("Segoe UI", 18F, FontStyle.Bold, GraphicsUnit.Point);
-            currentDefaultNameLabel.Location = new Point(0, 42);
-            currentDefaultNameLabel.Size = new Size(350, 38);
-            currentDefaultDeviceTag.Location = new Point(0, 72);
-            currentDefaultDeviceTag.Size = new Size(92, 28);
+            currentDefaultNameLabel.BackdropColor = UiTheme.Surface;
+            currentDefaultNameLabel.Font = new Font("Segoe UI", 13F, FontStyle.Bold, GraphicsUnit.Point);
+            currentDefaultNameLabel.Location = new Point(0, 39);
+            currentDefaultNameLabel.Size = new Size(250, 30);
+            currentDefaultDeviceTag.Location = new Point(0, 68);
+            currentDefaultDeviceTag.Size = new Size(92, 26);
             currentDefaultDeviceTag.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            currentDefaultDeviceTag.BackColor = Color.FromArgb(220, 234, 252);
             currentDefaultDeviceTag.Visible = false;
-            dashboardDefaultDeviceBadge = new RoundedLabel
+            var nextBootLabel = new Label
             {
-                BackdropColor = UiTheme.BannerStart,
-                FillColor = Color.FromArgb(220, 234, 252),
-                Font = new Font("Segoe UI", 9F, FontStyle.Bold, GraphicsUnit.Point),
-                ForeColor = UiTheme.Accent,
-                Location = new Point(250, 49),
-                Size = new Size(64, 27),
-                Text = "--"
+                AutoSize = true,
+                BackColor = Color.Transparent,
+                Font = new Font("Segoe UI", 8.5F, FontStyle.Bold, GraphicsUnit.Point),
+                ForeColor = UiTheme.Muted,
+                Location = new Point(330, 20),
+                Text = "下次启动"
             };
-            defaultBand.Controls.Add(dashboardDefaultDeviceBadge);
+            nextBootNameLabel = new AnimatedLabel
+            {
+                AutoEllipsis = true,
+                AutoSize = false,
+                BackdropColor = UiTheme.Surface,
+                Font = new Font("Segoe UI", 12F, FontStyle.Bold, GraphicsUnit.Point),
+                ForeColor = UiTheme.Ink,
+                Location = new Point(330, 42),
+                Size = new Size(190, 28),
+                Text = "请选择启动系统"
+            };
+            nextBootDeviceBadge = new RoundedLabel
+            {
+                BackdropColor = UiTheme.Surface,
+                FillColor = UiTheme.AccentSoft,
+                Font = new Font("Segoe UI", 8.5F, FontStyle.Bold, GraphicsUnit.Point),
+                ForeColor = UiTheme.Accent,
+                Location = new Point(330, 74),
+                Size = new Size(64, 24),
+                Text = "--",
+                TextAlign = ContentAlignment.MiddleCenter
+            };
 
             var bannerDivider = new Panel
             {
                 Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Right,
-                BackColor = Color.FromArgb(207, 220, 237),
-                Location = new Point(510, 18),
-                Size = new Size(1, 104)
+                BackColor = UiTheme.Border,
+                Location = new Point(300, 18),
+                Size = new Size(1, 88)
             };
             var announcementDot = new RoundedLabel
             {
                 Anchor = AnchorStyles.Top | AnchorStyles.Right,
-                BackdropColor = UiTheme.BannerEnd,
-                FillColor = Color.FromArgb(255, 69, 58),
-                Location = new Point(536, 25),
+                BackdropColor = UiTheme.Surface,
+                FillColor = UiTheme.Accent,
+                Location = new Point(548, 25),
                 Size = new Size(10, 10),
                 Text = string.Empty
             };
@@ -607,7 +626,7 @@ namespace DualBootSwitcher
                 BackColor = Color.Transparent,
                 Font = new Font("Segoe UI", 9.5F, FontStyle.Bold, GraphicsUnit.Point),
                 ForeColor = UiTheme.Ink,
-                Location = new Point(554, 20),
+                Location = new Point(566, 20),
                 Text = "项目动态"
             };
             announcementTitleLabel = new Label
@@ -619,7 +638,7 @@ namespace DualBootSwitcher
                 Cursor = Cursors.Hand,
                 Font = new Font("Segoe UI", 10.5F, FontStyle.Bold, GraphicsUnit.Point),
                 ForeColor = UiTheme.Ink,
-                Location = new Point(536, 54),
+                Location = new Point(548, 50),
                 Size = new Size(270, 25),
                 Text = "正在同步最新公告...",
                 TextAlign = ContentAlignment.MiddleLeft
@@ -632,8 +651,8 @@ namespace DualBootSwitcher
                 BackColor = Color.Transparent,
                 Font = new Font("Segoe UI", 8.5F, FontStyle.Regular, GraphicsUnit.Point),
                 ForeColor = UiTheme.Muted,
-                Location = new Point(536, 82),
-                Size = new Size(270, 20),
+                Location = new Point(548, 76),
+                Size = new Size(250, 20),
                 Text = "正在同步公告"
             };
             announcementTitleLabel.Click += delegate { ShowAnnouncement(); };
@@ -663,12 +682,15 @@ namespace DualBootSwitcher
             var announcementDivider = new Panel
             {
                 Anchor = AnchorStyles.Top | AnchorStyles.Right,
-                BackColor = Color.FromArgb(214, 225, 238),
-                Location = new Point(536, 105),
-                Size = new Size(260, 1)
+                BackColor = UiTheme.Border,
+                Location = new Point(548, 104),
+                Size = new Size(250, 1)
             };
 
             systemsWorkspacePanel.Controls.Add(defaultBand);
+            systemsWorkspacePanel.Controls.Add(nextBootLabel);
+            systemsWorkspacePanel.Controls.Add(nextBootNameLabel);
+            systemsWorkspacePanel.Controls.Add(nextBootDeviceBadge);
             systemsWorkspacePanel.Controls.Add(bannerDivider);
             systemsWorkspacePanel.Controls.Add(announcementDot);
             systemsWorkspacePanel.Controls.Add(announcementLabel);
@@ -898,8 +920,12 @@ namespace DualBootSwitcher
                 Size.Empty,
                 TextFormatFlags.NoPadding).Width;
             int badgeLeft = Math.Min(defaultBand.Width - 76, Math.Max(190, nameWidth + 14));
-            dashboardDefaultDeviceBadge.Location = new Point(badgeLeft, 49);
             currentDefaultNameLabel.Width = Math.Max(160, badgeLeft - 8);
+            if (nextBootNameLabel != null)
+            {
+                nextBootNameLabel.Width = Math.Max(120, dividerX - defaultBand.Right - 54);
+                nextBootDeviceBadge.Location = new Point(nextBootNameLabel.Left, 74);
+            }
             foreach (Control control in systemsWorkspacePanel.Controls)
             {
                 if (control.Width == 1)
@@ -1879,6 +1905,15 @@ namespace DualBootSwitcher
             selectedStateTag.ForeColor = UiTheme.Muted;
             selectedRemarkLabel.Text = "未设置备注";
             selectedRemarkLabel.ForeColor = UiTheme.Muted;
+            if (nextBootNameLabel != null)
+            {
+                nextBootNameLabel.Text = "请选择启动系统";
+            }
+            if (nextBootDeviceBadge != null)
+            {
+                nextBootDeviceBadge.Text = "--";
+                nextBootDeviceBadge.Visible = false;
+            }
             actionStatusLabel.Text = "正在读取 Windows 启动菜单...";
             interfaceToolTip.SetToolTip(currentDefaultDeviceTag, string.Empty);
             interfaceToolTip.SetToolTip(actionStatusLabel, string.Empty);
@@ -1968,10 +2003,6 @@ namespace DualBootSwitcher
             {
                 currentDefaultNameLabel.Text = "未识别默认系统";
                 currentDefaultDeviceTag.Visible = false;
-                if (dashboardDefaultDeviceBadge != null)
-                {
-                    dashboardDefaultDeviceBadge.Visible = false;
-                }
                 interfaceToolTip.SetToolTip(currentDefaultNameLabel, string.Empty);
                 interfaceToolTip.SetToolTip(currentDefaultDeviceTag, string.Empty);
                 return;
@@ -1980,13 +2011,7 @@ namespace DualBootSwitcher
             string displayName = GetEntryDisplayName(defaultEntry);
             currentDefaultNameLabel.Text = displayName;
             currentDefaultDeviceTag.Text = defaultEntry.Device;
-            currentDefaultDeviceTag.Visible = dashboardDefaultDeviceBadge == null;
-            if (dashboardDefaultDeviceBadge != null)
-            {
-                dashboardDefaultDeviceBadge.Text = defaultEntry.Device;
-                dashboardDefaultDeviceBadge.Visible = true;
-                LayoutDashboardBanner(systemsWorkspacePanel.Width);
-            }
+            currentDefaultDeviceTag.Visible = true;
             interfaceToolTip.SetToolTip(currentDefaultNameLabel, displayName);
             interfaceToolTip.SetToolTip(currentDefaultDeviceTag, defaultEntry.Device);
         }
@@ -2088,6 +2113,15 @@ namespace DualBootSwitcher
                 selectedStateTag.ForeColor = UiTheme.Muted;
                 selectedRemarkLabel.Text = "未设置备注";
                 selectedRemarkLabel.ForeColor = UiTheme.Muted;
+                if (nextBootNameLabel != null)
+                {
+                    nextBootNameLabel.Text = "请选择启动系统";
+                }
+                if (nextBootDeviceBadge != null)
+                {
+                    nextBootDeviceBadge.Text = "--";
+                    nextBootDeviceBadge.Visible = false;
+                }
                 return;
             }
 
@@ -2115,6 +2149,17 @@ namespace DualBootSwitcher
             selectedRemarkLabel.ForeColor = string.IsNullOrWhiteSpace(remark)
                 ? UiTheme.Muted
                 : UiTheme.Accent;
+            if (nextBootNameLabel != null)
+            {
+                nextBootNameLabel.Text = selectedEntry.Description;
+                interfaceToolTip.SetToolTip(nextBootNameLabel, selectedEntry.Description);
+            }
+            if (nextBootDeviceBadge != null)
+            {
+                nextBootDeviceBadge.Text = selectedEntry.Device;
+                nextBootDeviceBadge.Visible = true;
+                interfaceToolTip.SetToolTip(nextBootDeviceBadge, selectedEntry.Device);
+            }
             interfaceToolTip.SetToolTip(selectedNameLabel, selectedEntry.Description);
             interfaceToolTip.SetToolTip(selectedRemarkLabel, selectedRemarkLabel.Text);
 
