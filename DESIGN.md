@@ -1,19 +1,19 @@
 ---
 name: Dual Boot Switcher
-description: A single-page Windows boot dashboard guided by macOS HIG principles.
+description: A single-page Windows boot workspace for safe boot-target selection.
 colors:
-  brand: "#3B82F6"
-  primary-action: "#3B82F6"
-  primary-hover: "#2563EB"
-  primary-pressed: "#1D4ED8"
-  secondary: "#60A5FA"
-  selected: "#EFF6FF"
-  canvas: "#F0F5FA"
+  brand: "#168C68"
+  primary-action: "#168C68"
+  primary-hover: "#0F6F52"
+  primary-pressed: "#0B5A43"
+  secondary: "#4CB18F"
+  selected: "#E5F4EE"
+  canvas: "#EEF1F4"
   surface: "#FFFFFF"
-  chrome: "#F7FAFC"
-  ink: "#1E293B"
-  muted: "#475569"
-  border: "#E2E8F0"
+  chrome: "#F7F9FA"
+  ink: "#17202A"
+  muted: "#66737C"
+  border: "#DBE4E7"
   disabled: "#F1F5F9"
 typography:
   headline:
@@ -69,9 +69,9 @@ components:
 
 **Creative North Star: "Desktop Boot Console"**
 
-The current information architecture follows macOS HIG principles: one full-width integrated dashboard, clear selection focus, restrained material layers, and contextual actions. OrbiEn remains an attributed visual reference for its blue token set and compact desktop proportions.
+The current information architecture follows macOS HIG principles: one task-oriented workspace, clear selection focus, restrained material layers, and contextual actions. The visual system uses a pale neutral canvas with one green action/status family.
 
-The utility presents system management in one page without a navigation sidebar. The top Banner fuses the default boot environment with a structured project activity area for announcement and update status. The lower 64:36 region combines a custom rounded-row system list and a compact Inspector. Boot timeout lives in the list toolbar, so there is no separate preferences page or overlay.
+The utility presents system management in one page without a navigation sidebar. A compact startup status bar shows the current default system and the next boot target, while announcements and update status remain secondary. The lower desktop layout uses a roughly 64:36 list-to-details split; narrow windows stack the list above the inspector. Boot timeout lives in the list toolbar, so there is no separate preferences page or overlay.
 
 ### UI Library Decision
 - **AntdUI 2.4.4:** selected as the single control and interaction runtime because it supports .NET Framework 4.0, provides DPI-aware GDI+ controls, and already includes interruptible button, table, input, and modal animation.
@@ -83,26 +83,26 @@ The release therefore combines the useful interaction patterns from the evaluate
 
 ## 2. Colors
 
-The reference colors are `#3B82F6`, `#2563EB`, `#60A5FA`, `#F0F5FA`, `#F7FAFC`, `#FFFFFF`, `#1E293B`, and `#E2E8F0`.
+The shared colors are `#168C68`, `#0F6F52`, `#0B5A43`, `#4CB18F`, `#EEF1F4`, `#F7F9FA`, `#FFFFFF`, `#17202A`, and `#DBE4E7`.
 
 ### Primary
-- **OrbiEn Blue** (`#3B82F6`): product mark, focus identity, and active state.
-- **Strong Blue** (`#2563EB`): primary hover and text-on-pale-blue state.
-- **Pressed Blue** (`#1D4ED8`): primary press feedback.
+- **Focus Green** (`#168C68`): product mark, focus identity, active state, and primary action.
+- **Strong Green** (`#0F6F52`): primary hover and readable text-on-soft-green state.
+- **Pressed Green** (`#0B5A43`): primary press feedback.
 
 ### Secondary
-- **Muted Blue** (`#60A5FA`): focus ring and secondary active detail.
-- **Selected Blue Wash** (`#EFF6FF`): selected boot row and partition metadata background.
+- **Secondary Green** (`#4CB18F`): focus ring and secondary active detail.
+- **Selected Green Wash** (`#E5F4EE`): selected boot row and partition metadata background.
 
 ### Neutral
-- **Work Canvas** (`#F0F5FA`): application background and table header.
-- **Chrome** (`#F7FAFC`): auxiliary material and inspector background.
+- **Work Canvas** (`#EEF1F4`): application background and table header.
+- **Chrome** (`#F7F9FA`): auxiliary material and inspector background.
 - **Clear Surface** (`#FFFFFF`): header, status panel, data rows, and secondary buttons.
-- **Deep Slate** (`#1E293B`): primary text.
-- **Slate Label** (`#64748B`): secondary text and disabled labels.
-- **Slate Border** (`#E2E8F0`): dividers and control boundaries.
+- **Deep Ink** (`#17202A`): primary text.
+- **Muted Label** (`#66737C`): secondary text and disabled labels.
+- **Neutral Border** (`#DBE4E7`): dividers and control boundaries.
 
-**The Blue Restraint Rule.** Blue is reserved for the logo, active navigation, primary action, selected row, and explicit status. It is not general decoration.
+**The Green Restraint Rule.** Green is reserved for the logo, active navigation, primary action, selected row, and explicit status. It is not general decoration.
 
 ## 3. Typography
 
@@ -123,14 +123,14 @@ The reference colors are `#3B82F6`, `#2563EB`, `#60A5FA`, `#F0F5FA`, `#F7FAFC`, 
 
 ## 4. Elevation
 
-Depth is created with `#F8FAFC` behind white surfaces and one-pixel `#E2E8F0` boundaries. No decorative shadows are used in the desktop utility.
+Depth is created with the neutral canvas behind white surfaces and one-pixel `#DBE4E7` boundaries. No decorative shadows are used in the desktop utility.
 
 ## 5. Components
 
 ### Buttons
 - **Shape:** AntdUI-rendered 8px logical corners, DPI-aware drawing, and a 36-42px logical height based on hierarchy.
-- **Primary:** bold white text on OrbiEn Blue, Strong Blue on hover, and Pressed Blue on press.
-- **Secondary:** regular-weight Deep Slate text on a white surface with Slate Border.
+- **Primary:** bold white text on Focus Green, Strong Green on hover, and Pressed Green on press.
+- **Secondary:** regular-weight Deep Ink text on a white surface with Neutral Border.
 - **Disabled:** pale slate background with written disabled state.
 
 ### Dialogs
@@ -139,10 +139,10 @@ Depth is created with `#F8FAFC` behind white surfaces and one-pixel `#E2E8F0` bo
 - **Compatibility:** Windows 11 receives the native rounded-window preference; the clipped window region preserves the same corner shape on Windows 10.
 
 ### Boot Table
-- **Style:** white rows, a cool-canvas header, an 8px outer radius, hover feedback, and an animated full-row selection model.
+- **Style:** white rows, a neutral-canvas header, an 8px outer radius, hover feedback, and an animated full-row selection model.
 - **Columns:** boot system, partition, saved purpose remark, and written state.
 - **Weight:** system, partition, and status are bold for scanning; populated remarks use bold Accent text, while `未设置` remains regular Muted text.
-- **State:** the default system receives written status; the selected target eases into the pale-indigo wash.
+- **State:** the default system receives written status; the selected target eases into the pale green wash.
 
 ### Selected System Inspector
 - **Placement:** a stable right-side pane aligned with the boot table.
@@ -161,8 +161,8 @@ Depth is created with `#F8FAFC` behind white surfaces and one-pixel `#E2E8F0` bo
 - **State:** the button is disabled while BCD is loading or when the timeout cannot be read.
 
 ### Current Default Surface
-- **Style:** a white 8px-radius surface on the slate canvas.
-- **Content:** a label, system name, and pale-indigo partition badge with full text available by tooltip.
+- **Style:** a white 8px-radius surface on the neutral canvas.
+- **Content:** a label, system name, and pale green partition badge with full text available by tooltip.
 
 ## 6. Motion
 
@@ -174,14 +174,14 @@ Depth is created with `#F8FAFC` behind white surfaces and one-pixel `#E2E8F0` bo
 ## 7. Do's and Don'ts
 
 ### Do:
-- **Do** use the OrbiEn blue token set and integrated top Banner as the visual anchor.
+- **Do** use the restrained green token set and compact startup status bar as the visual anchor.
 - **Do** keep 24px working-area spacing and one clear primary action.
-- **Do** pair blue state color with written labels such as `当前默认` and `可切换`.
+- **Do** pair green state color with written labels such as `当前默认` and `可切换`.
 - **Do** keep the embedded user-provided dual-boot mark as the application and executable icon.
 - **Do** reserve motion for feedback and state continuity.
 
 ### Don't:
 - **Don't** copy the reference site's marketing Hero, advertisements, or card-heavy dashboard composition.
-- **Don't** introduce colors outside the blue and slate families without semantic need.
+- **Don't** introduce colors outside the green and neutral families without semantic need.
 - **Don't** use gradient text, glass effects, neon glow, or saturated inactive controls.
 - **Don't** add page-load choreography, bouncing, or animation longer than 250ms.

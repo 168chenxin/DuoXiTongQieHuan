@@ -536,11 +536,11 @@ namespace DualBootSwitcher
 
         private void BuildDashboardContent()
         {
-            BuildHeaderBanner();
+            BuildStartupStatusBar();
             MoveCoreDashboardControls();
         }
 
-        private void BuildHeaderBanner()
+        private void BuildStartupStatusBar()
         {
             systemsWorkspacePanel = new AntPanel
             {
@@ -603,7 +603,7 @@ namespace DualBootSwitcher
                 TextAlign = ContentAlignment.MiddleCenter
             };
 
-            var bannerDivider = new Panel
+            var statusDivider = new Panel
             {
                 Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Right,
                 BackColor = UiTheme.Border,
@@ -691,7 +691,7 @@ namespace DualBootSwitcher
             systemsWorkspacePanel.Controls.Add(nextBootLabel);
             systemsWorkspacePanel.Controls.Add(nextBootNameLabel);
             systemsWorkspacePanel.Controls.Add(nextBootDeviceBadge);
-            systemsWorkspacePanel.Controls.Add(bannerDivider);
+            systemsWorkspacePanel.Controls.Add(statusDivider);
             systemsWorkspacePanel.Controls.Add(announcementDot);
             systemsWorkspacePanel.Controls.Add(announcementLabel);
             systemsWorkspacePanel.Controls.Add(announcementTitleLabel);
@@ -872,8 +872,8 @@ namespace DualBootSwitcher
             int height = dashboardContent.ClientSize.Height;
             int outerMargin = 24;
             int cardGap = 16;
-            int bannerHeight = 124;
-            int coreTop = 20 + bannerHeight + cardGap;
+            int statusBarHeight = 124;
+            int coreTop = 20 + statusBarHeight + cardGap;
             int usableWidth = Math.Max(0, width - (outerMargin * 2));
             int availableCoreHeight = Math.Max(0, height - coreTop - 20);
             const int minimumListWidth = 300;
@@ -908,8 +908,8 @@ namespace DualBootSwitcher
             }
 
             systemsWorkspacePanel.Location = new Point(24, 20);
-            systemsWorkspacePanel.Size = new Size(usableWidth, bannerHeight);
-            LayoutDashboardBanner(usableWidth);
+            systemsWorkspacePanel.Size = new Size(usableWidth, statusBarHeight);
+            LayoutStartupStatusBar(usableWidth);
 
             systemListCard.Location = new Point(24, coreTop);
             systemListCard.Size = new Size(Math.Max(0, leftWidth), listHeight);
@@ -936,7 +936,7 @@ namespace DualBootSwitcher
             LayoutDashboardInspector(Math.Max(0, rightWidth), inspectorHeight);
         }
 
-        private void LayoutDashboardBanner(int width)
+        private void LayoutStartupStatusBar(int width)
         {
             int safeWidth = Math.Max(0, width);
             int announcementWidth = Math.Max(252, (int)Math.Round(safeWidth * 0.32));
