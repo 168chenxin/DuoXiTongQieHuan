@@ -8,6 +8,7 @@ internal static class AntdUiThemeTests
     {
         try
         {
+            UsesFocusSplitGreenPalette();
             SecondaryButtonsKeepReadableInteractionColors();
             DialogsUseUnifiedRoundedChrome();
             Console.WriteLine("AntdUI theme tests passed.");
@@ -18,6 +19,30 @@ internal static class AntdUiThemeTests
             Console.Error.WriteLine(exception.Message);
             return 1;
         }
+    }
+
+    private static void UsesFocusSplitGreenPalette()
+    {
+        AssertColor(
+            Color.FromArgb(238, 241, 244),
+            UiTheme.Canvas,
+            "The canvas should use the Focus Split neutral palette.");
+        AssertColor(
+            Color.FromArgb(255, 255, 255),
+            UiTheme.Surface,
+            "The surface should remain white.");
+        AssertColor(
+            Color.FromArgb(23, 32, 42),
+            UiTheme.Ink,
+            "The ink color should use the Focus Split neutral palette.");
+        AssertColor(
+            Color.FromArgb(22, 140, 104),
+            UiTheme.Primary,
+            "The primary color should use the Focus Split green palette.");
+        AssertColor(
+            Color.FromArgb(229, 244, 238),
+            UiTheme.AccentSoft,
+            "The soft accent should use the Focus Split green palette.");
     }
 
     private static void DialogsUseUnifiedRoundedChrome()

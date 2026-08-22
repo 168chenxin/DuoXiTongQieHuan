@@ -12,6 +12,7 @@ internal static class UiMotionTests
         {
             UsesEaseOutQuartTiming();
             UsesSmootherInteractionTiming();
+            SelectionFeedbackUsesStableTiming();
             BlendsEveryColorChannel();
             UsesDpiScaledDrawing();
             BuildsRoundedGeometry();
@@ -26,6 +27,23 @@ internal static class UiMotionTests
         {
             Console.Error.WriteLine(exception.Message);
             return 1;
+        }
+    }
+
+    private static void SelectionFeedbackUsesStableTiming()
+    {
+        AssertTrue(
+            UiTheme.StateMotionDuration >= 150 && UiTheme.StateMotionDuration <= 180,
+            "State transitions should use stable timing.");
+        AssertTrue(
+            UiTheme.PressMotionDuration >= 80 && UiTheme.PressMotionDuration < UiTheme.StateMotionDuration,
+            "Press feedback should be shorter than a state transition.");
+
+        using (var control = new Panel { Bounds = new Rectangle(10, 20, 120, 48) })
+        {
+            Rectangle originalBounds = control.Bounds;
+            control.AnimatePaintOffset(8F, 4F, 0);
+            AssertTrue(control.Bounds == originalBounds, "Paint offset animation must not change layout bounds.");
         }
     }
 
