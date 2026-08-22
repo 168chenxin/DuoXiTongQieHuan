@@ -11,6 +11,8 @@ internal static class UpdateServiceTests
         try
         {
             ParsesOnlyNewStableExecutableReleases();
+            IgnoresMalformedReleaseResponses();
+            RequiresSecureExecutableUrls();
             VerifiesSha256Digest();
             RejectsInvalidDigest();
             RejectsReleaseWithoutVerifiedExecutable();
@@ -63,6 +65,24 @@ internal static class UpdateServiceTests
         }
     }
 
+    private static void IgnoresMalformedReleaseResponses()
+    {
+        AssertTrue(
+            UpdateService.FindUpdate("{not-json", new Version(1, 3, 1, 0)) == null,
+            "Malformed GitHub responses should not produce an update or crash the background check.");
+        AssertTrue(
+            UpdateService.FindUpdate("null", new Version(1, 3, 1, 0)) == null,
+            "An empty GitHub release payload should be ignored.");
+    }
+
+    private static void RequiresSecureExecutableUrls()
+    {
+        const string json = "{\"tag_name\":\"v1.4.0\",\"draft\":false,\"prerelease\":false,\"html_url\":\"https://github.com/example/release\",\"assets\":[{\"name\":\"DualBootSwitcher.exe\",\"browser_download_url\":\"http://example.com/app.exe\",\"digest\":\"sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\"}]}";
+        AssertTrue(
+            UpdateService.FindUpdate(json, new Version(1, 3, 1, 0)) == null,
+            "Insecure executable download URLs must not be offered as automatic updates.");
+    }
+
     private static void RejectsInvalidDigest()
     {
         string path = Path.GetTempFileName();
@@ -102,7 +122,7 @@ internal static class UpdateServiceTests
     private static void ProvidesOfflineAnnouncementFallback()
     {
         AssertTrue(
-            UpdateService.DefaultAnnouncement.Contains("网维无盘启动"),
+            UpdateService.DefaultAnnouncement.Contains("双系统快速切换"),
             "An embedded announcement should be available when the online announcement cannot be read.");
     }
 

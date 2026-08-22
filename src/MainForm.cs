@@ -33,8 +33,6 @@ namespace DualBootSwitcher
         private AntButton editRemarkButton;
         private AntButton setDefaultButton;
         private AntButton setDefaultAndRestartButton;
-        private AntButton detectNetworkBootButton;
-        private AntButton restartToFirmwareButton;
         private AntButton announcementButton;
         private AntButton updateButton;
         private AntPanel defaultBand;
@@ -47,30 +45,19 @@ namespace DualBootSwitcher
         private Panel legacyHeader;
         private PageTransitionPanel pageHost;
         private Panel systemsPage;
-        private Panel networkPage;
         private Panel settingsPage;
         private Panel announcementPage;
         private AntButton systemsNavigation;
-        private AntButton networkNavigation;
         private AntButton settingsNavigation;
         private AntButton announcementNavigation;
         private Panel dashboardContent;
-        private AntPanel networkBootCard;
         private AntPanel systemListCard;
-        private AntTag networkBootStatusTag;
-        private Label networkBootSummaryLabel;
-        private Label networkBootDetailsLabel;
-        private AntButton networkBootStartButton;
         private AntdUI.Input inlineRemarkInput;
         private BootRowViewModel inlineRemarkRow;
         private Label announcementTitleLabel;
         private Label announcementDateLabel;
         private Label updateStatusLabel;
         private RoundedLabel dashboardDefaultDeviceBadge;
-        private FirmwareBootEntry inlineNetworkBootEntry;
-        private bool isApplyingInlineNetworkBoot;
-        private bool isRestartingToFirmware;
-        private const int NetworkBootCardHeight = 144;
         private readonly List<BootRowViewModel> bootRows = new List<BootRowViewModel>();
         private Icon applicationIcon;
         private Image applicationLogo;
@@ -200,13 +187,6 @@ namespace DualBootSwitcher
             refreshButton.AccessibleName = "刷新启动项";
             refreshButton.Click += async delegate { await LoadBootEntriesAsync(); };
 
-            detectNetworkBootButton = UiFactory.CreateButton("检测网维无盘启动", 220, true);
-            detectNetworkBootButton.Font = new Font("Segoe UI", 10F, FontStyle.Bold, GraphicsUnit.Point);
-            detectNetworkBootButton.Location = new Point(28, 565);
-            detectNetworkBootButton.Size = new Size(220, 42);
-            detectNetworkBootButton.AccessibleName = "检测网维无盘启动";
-            interfaceToolTip.SetToolTip(detectNetworkBootButton, "检测当前电脑的 UEFI 网络启动项，查看参数后再启动网维无盘");
-
             announcementButton = UiFactory.CreateButton("公告", 66, false);
             announcementButton.Font = new Font("Segoe UI", 8.5F, FontStyle.Bold, GraphicsUnit.Point);
             announcementButton.Location = new Point(826, 212);
@@ -333,15 +313,6 @@ namespace DualBootSwitcher
                 Size = new Size(864, 1)
             };
 
-            var networkBootLabel = new Label
-            {
-                AutoSize = true,
-                Font = new Font("Segoe UI", 8.5F, FontStyle.Bold, GraphicsUnit.Point),
-                ForeColor = UiTheme.Muted,
-                Location = new Point(31, 541),
-                Text = "网维无盘"
-            };
-
             actionStatusLabel = new AnimatedLabel
             {
                 AutoEllipsis = true,
@@ -374,12 +345,10 @@ namespace DualBootSwitcher
             Controls.Add(timeoutButton);
             Controls.Add(refreshButton);
             Controls.Add(announcementButton);
-            Controls.Add(detectNetworkBootButton);
             Controls.Add(entryCountLabel);
             Controls.Add(bootEntriesTable);
             Controls.Add(selectionPanel);
             Controls.Add(divider);
-            Controls.Add(networkBootLabel);
             Controls.Add(actionStatusLabel);
             Controls.Add(setDefaultButton);
             Controls.Add(setDefaultAndRestartButton);
@@ -389,12 +358,6 @@ namespace DualBootSwitcher
             SetActionButtonsEnabled(false);
             FormClosing += delegate(object sender, FormClosingEventArgs eventArgs)
             {
-                if (isApplyingInlineNetworkBoot || isRestartingToFirmware)
-                {
-                    eventArgs.Cancel = true;
-                    return;
-                }
-
                 isClosing = true;
             };
             Shown += async delegate
@@ -574,7 +537,6 @@ namespace DualBootSwitcher
         {
             BuildHeaderBanner();
             MoveCoreDashboardControls();
-            BuildNetworkDisclosureCard();
         }
 
         private void BuildHeaderBanner()
@@ -875,154 +837,6 @@ namespace DualBootSwitcher
             defaultBand.Visible = true;
             timeoutButton.Visible = true;
             updateButton.Visible = false;
-            detectNetworkBootButton.Visible = false;
-        }
-
-        private void BuildNetworkDisclosureCard()
-        {
-            networkBootCard = new AntPanel
-            {
-                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right,
-                Back = UiTheme.Surface,
-                BorderWidth = 0F,
-                Radius = UiTheme.WorkspaceCornerRadius,
-                Shadow = 8,
-                ShadowColor = Color.FromArgb(55, 85, 125),
-                ShadowOffsetY = 2,
-                ShadowOpacity = 0.07F,
-                Size = new Size(832, NetworkBootCardHeight)
-            };
-            var icon = new Label
-            {
-                BackColor = UiTheme.Surface,
-                Font = new Font("Segoe MDL2 Assets", 14F, FontStyle.Regular, GraphicsUnit.Point),
-                ForeColor = UiTheme.Primary,
-                Location = new Point(20, 22),
-                Size = new Size(32, 32),
-                Text = "\uE774",
-                TextAlign = ContentAlignment.MiddleCenter
-            };
-            var title = new Label
-            {
-                AutoSize = true,
-                BackColor = UiTheme.Surface,
-                Font = new Font("Segoe UI", 10.5F, FontStyle.Bold, GraphicsUnit.Point),
-                ForeColor = UiTheme.Ink,
-                Location = new Point(62, 18),
-                Text = "网维无盘 UEFI 网络启动"
-            };
-            networkBootSummaryLabel = new Label
-            {
-                AutoEllipsis = true,
-                AutoSize = false,
-                BackColor = UiTheme.Surface,
-                Font = new Font("Segoe UI", 8.5F, FontStyle.Regular, GraphicsUnit.Point),
-                ForeColor = UiTheme.Muted,
-                Location = new Point(62, 45),
-                Size = new Size(238, 24),
-                Text = "高级启动功能，当前尚未检测"
-            };
-            networkBootStatusTag = new AntTag
-            {
-                Anchor = AnchorStyles.Top | AnchorStyles.Right,
-                AutoSize = false,
-                BackColor = UiTheme.Disabled,
-                BorderWidth = 0F,
-                Font = new Font("Segoe UI", 8.5F, FontStyle.Bold, GraphicsUnit.Point),
-                ForeColor = UiTheme.Muted,
-                Location = new Point(62, 76),
-                Radius = UiTheme.BadgeCornerRadius,
-                Size = new Size(88, 30),
-                Text = "未检测",
-                TextAlign = ContentAlignment.MiddleCenter
-            };
-            detectNetworkBootButton.Text = "检测无盘环境";
-            detectNetworkBootButton.Location = new Point(694, 38);
-            detectNetworkBootButton.Size = new Size(138, 38);
-            detectNetworkBootButton.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            detectNetworkBootButton.Visible = true;
-            detectNetworkBootButton.Click -= delegate { ShowNetworkBootDetection(); };
-            detectNetworkBootButton.Click += async delegate { await DetectInlineNetworkBootAsync(); };
-
-            restartToFirmwareButton = UiFactory.CreateFirmwareActionButton("进入 BIOS", 98);
-            restartToFirmwareButton.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            restartToFirmwareButton.Location = new Point(772, 38);
-            restartToFirmwareButton.Size = new Size(98, 38);
-            restartToFirmwareButton.AccessibleName = "重启进入 BIOS 设置";
-            interfaceToolTip.SetToolTip(
-                restartToFirmwareButton,
-                "重启电脑并进入 UEFI 或 BIOS 设置，不修改启动顺序或固件参数");
-            restartToFirmwareButton.Click += async delegate { await RestartToFirmwareSettingsAsync(); };
-
-            networkBootDetailsLabel = new Label
-            {
-                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right,
-                AutoEllipsis = true,
-                AutoSize = false,
-                BackColor = UiTheme.Surface,
-                Font = new Font("Consolas", 8.5F, FontStyle.Regular, GraphicsUnit.Point),
-                ForeColor = UiTheme.Muted,
-                Location = new Point(330, 38),
-                Size = new Size(330, 72),
-                Text = "尚未检测\r\n检测后将在此显示固件 GUID、设备参数和 EFI 路径。",
-                Visible = true
-            };
-            networkBootStartButton = UiFactory.CreateButton("启动网维无盘", 170, true);
-            networkBootStartButton.IconSvg = null;
-            networkBootStartButton.Text = "启动网维无盘";
-            networkBootStartButton.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            networkBootStartButton.Location = new Point(694, 88);
-            networkBootStartButton.Size = new Size(138, 42);
-            networkBootStartButton.Enabled = false;
-            networkBootStartButton.Visible = true;
-            networkBootStartButton.Click += async delegate { await StartInlineNetworkBootAsync(); };
-
-            var parameterLabel = new Label
-            {
-                AutoSize = true,
-                BackColor = UiTheme.Surface,
-                Font = new Font("Segoe UI", 8.5F, FontStyle.Bold, GraphicsUnit.Point),
-                ForeColor = UiTheme.Muted,
-                Location = new Point(330, 18),
-                Text = "检测参数"
-            };
-            var parameterDivider = new Panel
-            {
-                BackColor = UiTheme.Border,
-                Location = new Point(310, 18),
-                Size = new Size(1, 108)
-            };
-            var actionDivider = new Panel
-            {
-                Anchor = AnchorStyles.Top | AnchorStyles.Right,
-                BackColor = UiTheme.Border,
-                Location = new Point(674, 18),
-                Size = new Size(1, 108)
-            };
-            var actionLabel = new Label
-            {
-                Anchor = AnchorStyles.Top | AnchorStyles.Right,
-                AutoSize = true,
-                BackColor = UiTheme.Surface,
-                Font = new Font("Segoe UI", 8.5F, FontStyle.Bold, GraphicsUnit.Point),
-                ForeColor = UiTheme.Muted,
-                Location = new Point(694, 18),
-                Text = "网维与固件"
-            };
-
-            networkBootCard.Controls.Add(icon);
-            networkBootCard.Controls.Add(title);
-            networkBootCard.Controls.Add(networkBootSummaryLabel);
-            networkBootCard.Controls.Add(networkBootStatusTag);
-            networkBootCard.Controls.Add(parameterDivider);
-            networkBootCard.Controls.Add(parameterLabel);
-            networkBootCard.Controls.Add(detectNetworkBootButton);
-            networkBootCard.Controls.Add(restartToFirmwareButton);
-            networkBootCard.Controls.Add(networkBootDetailsLabel);
-            networkBootCard.Controls.Add(actionDivider);
-            networkBootCard.Controls.Add(actionLabel);
-            networkBootCard.Controls.Add(networkBootStartButton);
-            dashboardContent.Controls.Add(networkBootCard);
         }
 
         private void LayoutAppleDashboard()
@@ -1036,9 +850,7 @@ namespace DualBootSwitcher
             int usableWidth = width - 48;
             int cardGap = 16;
             int bannerHeight = 140;
-            int networkTop = 20 + bannerHeight + cardGap;
-            int networkHeight = NetworkBootCardHeight;
-            int coreTop = networkTop + networkHeight + cardGap;
+            int coreTop = 20 + bannerHeight + cardGap;
             int availableCoreHeight = dashboardContent.ClientSize.Height - coreTop - 20;
             int coreHeight = Math.Max(296, availableCoreHeight);
             int leftWidth = (int)Math.Round((usableWidth - cardGap) * 0.64);
@@ -1051,44 +863,6 @@ namespace DualBootSwitcher
             systemsWorkspacePanel.Location = new Point(24, 20);
             systemsWorkspacePanel.Size = new Size(usableWidth, bannerHeight);
             LayoutDashboardBanner(usableWidth);
-
-            networkBootCard.Location = new Point(24, networkTop);
-            networkBootCard.Size = new Size(usableWidth, networkHeight);
-            int networkInfoWidth = Math.Max(250, (int)Math.Round(usableWidth * 0.27));
-            int networkActionWidth = 232;
-            int detailsLeft = networkInfoWidth + 34;
-            int detailsRight = usableWidth - networkActionWidth - 22;
-            networkBootSummaryLabel.Size = new Size(Math.Max(170, networkInfoWidth - 76), 24);
-            networkBootStatusTag.Location = new Point(62, 76);
-            int actionLeft = usableWidth - networkActionWidth + 12;
-            int actionButtonWidth = (networkActionWidth - 30) / 2;
-            detectNetworkBootButton.Location = new Point(actionLeft, 38);
-            detectNetworkBootButton.Size = new Size(actionButtonWidth, 38);
-            restartToFirmwareButton.Location = new Point(actionLeft + actionButtonWidth + 6, 38);
-            restartToFirmwareButton.Size = new Size(actionButtonWidth, 38);
-            networkBootDetailsLabel.Location = new Point(detailsLeft, 38);
-            networkBootDetailsLabel.Size = new Size(Math.Max(250, detailsRight - detailsLeft - 14), 72);
-            networkBootStartButton.Location = new Point(actionLeft, 88);
-            networkBootStartButton.Size = new Size(networkActionWidth - 24, 42);
-            foreach (Control control in networkBootCard.Controls)
-            {
-                if (control is Panel && control.Width == 1)
-                {
-                    control.Location = control.Anchor.HasFlag(AnchorStyles.Right)
-                        ? new Point(usableWidth - networkActionWidth - 2, 18)
-                        : new Point(networkInfoWidth + 14, 18);
-                    control.Height = 108;
-                }
-                var label = control as Label;
-                if (label != null && label.Text == "检测参数")
-                {
-                    label.Location = new Point(detailsLeft, 18);
-                }
-                if (label != null && label.Text == "启动操作")
-                {
-                    label.Location = new Point(usableWidth - networkActionWidth + 12, 18);
-                }
-            }
 
             systemListCard.Location = new Point(24, coreTop);
             systemListCard.Size = new Size(leftWidth, coreHeight);
@@ -1369,153 +1143,6 @@ namespace DualBootSwitcher
             inlineRemarkRow = null;
         }
 
-        private async Task DetectInlineNetworkBootAsync()
-        {
-            detectNetworkBootButton.Enabled = false;
-            detectNetworkBootButton.Loading = true;
-            networkBootStatusTag.Text = "检测中";
-            networkBootStatusTag.BackColor = UiTheme.AccentSoft;
-            networkBootStatusTag.ForeColor = UiTheme.Accent;
-            networkBootSummaryLabel.Text = "正在读取 UEFI 固件启动项...";
-            networkBootDetailsLabel.Text = "正在读取固件启动项，请稍候...";
-            try
-            {
-                List<FirmwareBootEntry> entries = await Task.Run(
-                    (Func<List<FirmwareBootEntry>>)BcdService.LoadFirmwareEntries);
-                if (isClosing || IsDisposed)
-                {
-                    return;
-                }
-
-                inlineNetworkBootEntry = FirmwareBootParser.FindBestNetworkBootEntry(entries);
-                if (inlineNetworkBootEntry == null)
-                {
-                    networkBootStatusTag.Text = "未发现";
-                    networkBootStatusTag.BackColor = UiTheme.WarningSoft;
-                    networkBootStatusTag.ForeColor = UiTheme.Warning;
-                    networkBootSummaryLabel.Text = "固件中没有可用的 PXE、IPv4 或 IPv6 启动项";
-                    networkBootDetailsLabel.Text = "当前电脑仍可正常使用本地系统切换功能。";
-                    networkBootStartButton.Enabled = false;
-                    return;
-                }
-
-                FirmwareBootEntry entry = inlineNetworkBootEntry;
-                networkBootStatusTag.Text = "已识别";
-                networkBootStatusTag.BackColor = UiTheme.SuccessSoft;
-                networkBootStatusTag.ForeColor = UiTheme.Success;
-                networkBootSummaryLabel.Text = entry.DisplayName + "  ·  " + entry.NetworkType;
-                networkBootDetailsLabel.Text = "GUID  " + entry.Identifier + "\r\n设备  " +
-                    FormatFirmwareSummary(entry.Device) + "\r\n路径  " + FormatFirmwareSummary(entry.Path);
-                networkBootStartButton.Enabled = true;
-            }
-            catch (Exception exception)
-            {
-                networkBootStatusTag.Text = "读取失败";
-                networkBootStatusTag.BackColor = UiTheme.WarningSoft;
-                networkBootStatusTag.ForeColor = UiTheme.Warning;
-                networkBootSummaryLabel.Text = "无法读取 UEFI 固件启动项";
-                networkBootDetailsLabel.Text = exception.Message;
-                networkBootStartButton.Enabled = false;
-            }
-            finally
-            {
-                if (!isClosing && !IsDisposed)
-                {
-                    detectNetworkBootButton.Loading = false;
-                    detectNetworkBootButton.Enabled = true;
-                    detectNetworkBootButton.Text = "重新检测";
-                }
-            }
-        }
-
-        private async Task StartInlineNetworkBootAsync()
-        {
-            if (inlineNetworkBootEntry == null)
-            {
-                return;
-            }
-
-            DialogResult confirmation;
-            using (var dialog = new NetworkBootConfirmDialog(this, inlineNetworkBootEntry))
-            {
-                confirmation = dialog.ShowDialog(this);
-            }
-            if (confirmation != DialogResult.OK)
-            {
-                return;
-            }
-
-            isApplyingInlineNetworkBoot = true;
-            networkBootStartButton.Enabled = false;
-            networkBootStartButton.Loading = true;
-            networkBootStartButton.Text = "正在设置并重启";
-            bool networkBootWasSet = false;
-            try
-            {
-                FirmwareBootEntry entry = inlineNetworkBootEntry;
-                await Task.Run(() => BcdService.SetNextFirmwareBoot(entry));
-                networkBootWasSet = true;
-                BcdService.RestartComputer();
-                isApplyingInlineNetworkBoot = false;
-                Close();
-            }
-            catch (Exception exception)
-            {
-                isApplyingInlineNetworkBoot = false;
-                networkBootStartButton.Loading = false;
-                networkBootStartButton.Text = "启动网维无盘";
-                networkBootStartButton.Enabled = true;
-                UiDialogs.ShowError(
-                    this,
-                    networkBootWasSet ? "自动重启失败" : "设置网维启动失败",
-                    (networkBootWasSet
-                        ? "下一次网维启动已经设置，请保存工作后手动重启电脑。"
-                        : "没有修改永久 BIOS 启动顺序，请检查主板固件兼容性。") +
-                    "\r\n\r\n" + exception.Message);
-            }
-        }
-
-        private async Task RestartToFirmwareSettingsAsync()
-        {
-            DialogResult confirmation = UiDialogs.Confirm(
-                this,
-                "确认进入 BIOS 设置",
-                "电脑将立即重启并尝试进入 UEFI/BIOS 设置。\r\n\r\n此操作不会修改默认启动系统、网维无盘配置或 BIOS 参数。请先保存所有正在进行的工作。",
-                "重启进入 BIOS");
-            if (confirmation != DialogResult.OK)
-            {
-                return;
-            }
-
-            isRestartingToFirmware = true;
-            restartToFirmwareButton.Enabled = false;
-            restartToFirmwareButton.Loading = true;
-            restartToFirmwareButton.Text = "正在重启...";
-            try
-            {
-                await Task.Run((Action)BcdService.RestartToFirmwareSettings);
-                isRestartingToFirmware = false;
-                Close();
-            }
-            catch (Exception exception)
-            {
-                isRestartingToFirmware = false;
-                restartToFirmwareButton.Loading = false;
-                restartToFirmwareButton.Text = "进入 BIOS";
-                restartToFirmwareButton.Enabled = true;
-                UiDialogs.ShowError(
-                    this,
-                    "无法进入 BIOS 设置",
-                    "当前电脑可能未使用 UEFI 启动，或固件不支持从 Windows 直接进入设置。\r\n\r\n" +
-                    "你仍可在开机时使用主板提示的快捷键进入 BIOS。\r\n\r\n" + exception.Message);
-            }
-        }
-
-        private static string FormatFirmwareSummary(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? "固件未提供" : value;
-        }
-
         private void ApplyOrbienShell()
         {
             SuspendLayout();
@@ -1525,12 +1152,10 @@ namespace DualBootSwitcher
             }
 
             systemsPage = CreatePage("\uE7F4", "系统切换", "选择下次启动的 Windows 系统");
-            networkPage = CreatePage("\uE71B", "网维无盘", "UEFI 网络启动");
             settingsPage = CreatePage("\uE713", "设置", "启动菜单与软件更新");
             announcementPage = CreatePage("\uE8A5", "公告", "软件动态与版本信息");
 
             MoveSystemsControls();
-            BuildNetworkPage();
             BuildSettingsPage();
             BuildAnnouncementPage();
 
@@ -1543,7 +1168,6 @@ namespace DualBootSwitcher
                 Size = new Size(ClientSize.Width - 72, ClientSize.Height)
             };
             pageHost.Controls.Add(systemsPage);
-            pageHost.Controls.Add(networkPage);
             pageHost.Controls.Add(settingsPage);
             pageHost.Controls.Add(announcementPage);
 
@@ -1622,12 +1246,10 @@ namespace DualBootSwitcher
                 Size = new Size(34, 34)
             };
             systemsNavigation = CreateNavigationButton("\uE7F4", "系统切换", 76);
-            networkNavigation = CreateNavigationButton("\uE71B", "网维无盘", 128);
             settingsNavigation = CreateNavigationButton("\uE713", "设置", 180);
             announcementNavigation = CreateNavigationButton("\uE8A5", "公告", 232);
 
             systemsNavigation.Click += delegate { NavigateTo(systemsPage, systemsNavigation); };
-            networkNavigation.Click += delegate { NavigateTo(networkPage, networkNavigation); };
             settingsNavigation.Click += delegate { NavigateTo(settingsPage, settingsNavigation); };
             announcementNavigation.Click += delegate { NavigateTo(announcementPage, announcementNavigation); };
 
@@ -1646,7 +1268,6 @@ namespace DualBootSwitcher
 
             sidebar.Controls.Add(logo);
             sidebar.Controls.Add(systemsNavigation);
-            sidebar.Controls.Add(networkNavigation);
             sidebar.Controls.Add(settingsNavigation);
             sidebar.Controls.Add(announcementNavigation);
             sidebar.Controls.Add(adminTag);
@@ -1689,7 +1310,6 @@ namespace DualBootSwitcher
         private void SetActiveNavigation(AntButton activeNavigation)
         {
             ApplyNavigationState(systemsNavigation, ReferenceEquals(activeNavigation, systemsNavigation));
-            ApplyNavigationState(networkNavigation, ReferenceEquals(activeNavigation, networkNavigation));
             ApplyNavigationState(settingsNavigation, ReferenceEquals(activeNavigation, settingsNavigation));
             ApplyNavigationState(announcementNavigation, ReferenceEquals(activeNavigation, announcementNavigation));
         }
@@ -1833,7 +1453,6 @@ namespace DualBootSwitcher
             foreach (Control control in Controls)
             {
                 if (ReferenceEquals(control, legacyHeader) ||
-                    ReferenceEquals(control, detectNetworkBootButton) ||
                     ReferenceEquals(control, announcementButton) ||
                     ReferenceEquals(control, timeoutButton) ||
                     ReferenceEquals(control, updateButton))
@@ -1928,35 +1547,6 @@ namespace DualBootSwitcher
             catch (EntryPointNotFoundException)
             {
             }
-        }
-
-        private void BuildNetworkPage()
-        {
-            var panel = CreateFeaturePanel(
-                "固件网络启动",
-                "检测 PXE、IPv4、IPv6 和网维无盘启动项",
-                82,
-                190);
-            var statusTag = new AntTag
-            {
-                AutoSize = false,
-                BackColor = UiTheme.AccentSoft,
-                BorderWidth = 0F,
-                Font = new Font("Segoe UI", 9F, FontStyle.Bold, GraphicsUnit.Point),
-                ForeColor = UiTheme.Accent,
-                Location = new Point(22, 102),
-                Radius = UiTheme.BadgeCornerRadius,
-                Size = new Size(118, 32),
-                Text = "等待检测",
-                TextAlign = ContentAlignment.MiddleCenter,
-                Type = AntdUI.TTypeMini.Primary
-            };
-            detectNetworkBootButton.Location = new Point(728, 99);
-            detectNetworkBootButton.Size = new Size(208, 42);
-            detectNetworkBootButton.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            panel.Controls.Add(statusTag);
-            panel.Controls.Add(detectNetworkBootButton);
-            networkPage.Controls.Add(panel);
         }
 
         private void BuildSettingsPage()
@@ -2340,11 +1930,11 @@ namespace DualBootSwitcher
                 currentDefaultDeviceTag.Visible = false;
                 timeoutButton.Text = "启动等待：读取失败";
                 timeoutButton.Enabled = false;
-                actionStatusLabel.Text = "请检查 Windows 引导配置或固件接口兼容性";
+                actionStatusLabel.Text = "请检查 Windows 引导配置或系统接口兼容性";
                 UiDialogs.ShowError(
                     this,
                     "读取启动配置失败",
-                    "无法解析 Windows 引导配置。程序已请求管理员权限；请检查引导存储或固件接口兼容性。\r\n\r\n" + exception.Message);
+                    "无法解析 Windows 引导配置。程序已请求管理员权限；请检查引导存储或系统接口兼容性。\r\n\r\n" + exception.Message);
             }
             finally
             {
@@ -2361,14 +1951,6 @@ namespace DualBootSwitcher
                     UseWaitCursor = false;
                     UpdateActionButtons();
                 }
-            }
-        }
-
-        private void ShowNetworkBootDetection()
-        {
-            using (var dialog = new NetworkBootDialog(this))
-            {
-                dialog.ShowDialog(this);
             }
         }
 

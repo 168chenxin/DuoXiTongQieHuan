@@ -8,47 +8,9 @@ namespace DualBootSwitcher
 {
     internal static class BcdService
     {
-        internal const string FirmwareSetupRestartArguments = "/r /fw /t 0";
-
         public static List<BootEntry> LoadEntries()
         {
             return LoadConfiguration().Entries;
-        }
-
-        public static List<FirmwareBootEntry> LoadFirmwareEntries()
-        {
-            BcdCommandResult result = RunBcdEditRaw("/enum firmware");
-            List<FirmwareBootEntry> entries = FirmwareBootParser.ParseEntries(result.CombinedOutput);
-            if (result.IsSuccess || entries.Count > 0)
-            {
-                return entries;
-            }
-
-            throw new InvalidOperationException("bcdedit 读取固件启动项失败：" + result.ErrorDetails);
-        }
-
-        public static void SetNextFirmwareBoot(FirmwareBootEntry entry)
-        {
-            if (entry == null || string.IsNullOrWhiteSpace(entry.Identifier))
-            {
-                throw new ArgumentException("请选择一个有效的固件启动项。", "entry");
-            }
-
-            BcdCommandResult setResult = RunBcdEditRaw(
-                "/set {fwbootmgr} bootsequence " + entry.Identifier);
-            if (setResult.IsSuccess)
-            {
-                return;
-            }
-
-            BcdCommandResult verificationResult = RunBcdEditRaw("/enum {fwbootmgr} /v");
-            if (WasFirmwareBootSequenceApplied(entry.Identifier, verificationResult))
-            {
-                return;
-            }
-
-            throw new InvalidOperationException(
-                "bcdedit 设置下一次固件启动失败：" + setResult.ErrorDetails);
         }
 
         public static BootConfiguration LoadConfiguration()
@@ -139,11 +101,6 @@ namespace DualBootSwitcher
             RunShutdown("/r /t 0", "自动重启失败");
         }
 
-        public static void RestartToFirmwareSettings()
-        {
-            RunShutdown(FirmwareSetupRestartArguments, "重启进入 UEFI/BIOS 设置失败");
-        }
-
         private static void RunShutdown(string arguments, string failureMessage)
         {
             var startInfo = new ProcessStartInfo
@@ -198,14 +155,6 @@ namespace DualBootSwitcher
             }
 
             return selectedEntries;
-        }
-
-        internal static bool WasFirmwareBootSequenceApplied(
-            string identifier,
-            BcdCommandResult verificationResult)
-        {
-            return verificationResult != null &&
-                BcdParser.BootSequenceContains(verificationResult.CombinedOutput, identifier);
         }
 
         internal static bool WasDefaultApplied(string identifier, BcdCommandResult verificationResult)

@@ -47,7 +47,6 @@ namespace DualBootSwitcher
     internal enum NavigationIcon
     {
         Systems,
-        Network,
         Settings,
         Announcement
     }
@@ -263,12 +262,6 @@ namespace DualBootSwitcher
                     graphics.DrawRectangle(pen, left + (2F * scale), top + (3F * scale), 18F * scale, 13F * scale);
                     graphics.DrawLine(pen, left + (8F * scale), top + (20F * scale), left + (14F * scale), top + (20F * scale));
                     graphics.DrawLine(pen, left + (11F * scale), top + (16F * scale), left + (11F * scale), top + (20F * scale));
-                }
-                else if (icon == NavigationIcon.Network)
-                {
-                    graphics.DrawArc(pen, left + (1F * scale), top + (7F * scale), 10F * scale, 10F * scale, 42F, 276F);
-                    graphics.DrawArc(pen, left + (11F * scale), top + (5F * scale), 10F * scale, 10F * scale, 222F, 276F);
-                    graphics.DrawLine(pen, left + (8F * scale), top + (15F * scale), left + (15F * scale), top + (8F * scale));
                 }
                 else if (icon == NavigationIcon.Settings)
                 {

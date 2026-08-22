@@ -45,8 +45,6 @@ $executablePath = Join-Path $outputDirectory 'DualBootSwitcher.exe'
     "$root\src\BcdCommandResult.cs" `
     "$root\src\BcdParser.cs" `
     "$root\src\BcdService.cs" `
-    "$root\src\FirmwareBootModels.cs" `
-    "$root\src\FirmwareBootParser.cs" `
     "$root\src\UpdateService.cs" `
     "$root\src\BootRemarkStore.cs" `
     "$root\src\UiTheme.cs" `
@@ -62,8 +60,6 @@ $executablePath = Join-Path $outputDirectory 'DualBootSwitcher.exe'
     "$root\src\RemarkDialog.cs" `
     "$root\src\BootTimeoutWorkflow.cs" `
     "$root\src\TimeoutDialog.cs" `
-    "$root\src\NetworkBootDialog.cs" `
-    "$root\src\NetworkBootConfirmDialog.cs" `
     "$root\src\MainForm.cs" `
     "$root\src\Program.cs"
 

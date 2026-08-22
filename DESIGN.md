@@ -69,9 +69,9 @@ components:
 
 **Creative North Star: "Desktop Boot Console"**
 
-The current information architecture follows macOS HIG principles: one full-width integrated dashboard, progressive disclosure for advanced network boot, clear selection focus, restrained material layers, and contextual actions. OrbiEn remains an attributed visual reference for its blue token set and compact desktop proportions.
+The current information architecture follows macOS HIG principles: one full-width integrated dashboard, clear selection focus, restrained material layers, and contextual actions. OrbiEn remains an attributed visual reference for its blue token set and compact desktop proportions.
 
-The utility presents system management in one page without a navigation sidebar. The top Banner fuses the default boot environment with a structured project activity area for announcement and update status. The network boot card sits directly below the Banner as a fixed-height, three-column advanced-startup workspace: detection state, firmware parameters, and actions. Detection replaces the content in place and never moves the system workspace. The lower 64:36 region combines a custom rounded-row system list and a compact Inspector. Boot timeout lives in the list toolbar, so there is no separate preferences page or overlay.
+The utility presents system management in one page without a navigation sidebar. The top Banner fuses the default boot environment with a structured project activity area for announcement and update status. The lower 64:36 region combines a custom rounded-row system list and a compact Inspector. Boot timeout lives in the list toolbar, so there is no separate preferences page or overlay.
 
 ### UI Library Decision
 - **AntdUI 2.4.4:** selected as the single control and interaction runtime because it supports .NET Framework 4.0, provides DPI-aware GDI+ controls, and already includes interruptible button, table, input, and modal animation.
@@ -152,7 +152,7 @@ Depth is created with `#F8FAFC` behind white surfaces and one-pixel `#E2E8F0` bo
 ### Remarks
 - **Entry point:** `编辑备注` button or double-clicking a boot row.
 - **Storage:** current-user registry under `Software\DualBootSwitcher\BootRemarks`, keyed by the BCD identifier.
-- **Safety:** remarks never call `bcdedit`; only the explicit default/restart actions modify BCD.
+- **Safety:** remarks never call `bcdedit`; only the explicit default/restart actions modify the Windows BCD.
 
 ### Boot Timeout
 - **Display:** a compact secondary button beside the boot-entry count shows the active timeout in seconds.

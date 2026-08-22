@@ -18,9 +18,6 @@ namespace DualBootSwitcher
         private static readonly Regex TimeoutPattern = new Regex(
             @"^\s*(?:timeout|超时)\s+(?<seconds>\d+)\s*$",
             RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.CultureInvariant);
-        private static readonly Regex BootSequencePattern = new Regex(
-            @"^[ \t]*(?:bootsequence|启动顺序)[ \t]+(?<identifiers>\{[^}\r\n]+\}(?:\r?\n[ \t]+\{[^}\r\n]+\})*)",
-            RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.CultureInvariant);
 
         public static List<BootEntry> ParseBootLoaders(string output)
         {
@@ -95,30 +92,6 @@ namespace DualBootSwitcher
             }
 
             return seconds;
-        }
-
-        public static bool BootSequenceContains(string output, string identifier)
-        {
-            if (string.IsNullOrWhiteSpace(output) || string.IsNullOrWhiteSpace(identifier))
-            {
-                return false;
-            }
-
-            Match bootSequence = BootSequencePattern.Match(output);
-            if (!bootSequence.Success)
-            {
-                return false;
-            }
-
-            foreach (Match value in IdentifierPattern.Matches(bootSequence.Groups["identifiers"].Value))
-            {
-                if (IdentifiersMatch(value.Value, identifier))
-                {
-                    return true;
-                }
-            }
-
-            return false;
         }
 
         public static bool IdentifiersMatch(string first, string second)

@@ -1,25 +1,21 @@
 # 软件公告
 
-`v1.4.1` 已发布。本次版本新增 BIOS 设置入口，并继续保留单页主控台、网维无盘启动、云更新和统一圆角界面。
+`v1.4.2` 已发布。本次安全更新移除了高风险的外部启动入口，仅保留本地 Windows 系统切换。
 
 ## 本次新增功能
 
-- 主界面整合当前系统、项目动态、网维无盘、引导系统列表和选中系统操作，不再使用分散导航页面。
-- 公告、备注、等待时间、通用提示和网维无盘相关窗口统一为圆角应用外壳。
-- 网维无盘卡片新增琥珀色“进入 BIOS”按钮，确认后重启进入 UEFI/BIOS 设置，不修改默认启动项或固件参数。
-- 修复部分固件环境中网维启动已经设置成功，却因 `bcdedit` 返回“函数不正确”而误报失败的问题。
+- 主界面整合当前系统、项目动态、引导系统列表和选中系统操作，不再使用分散导航页面。
+- 公告、备注和等待时间窗口统一为圆角应用外壳。
 - 启动后自动检查 GitHub 正式版本，顶部“检查更新”按钮可随时手动检查。
 - 每次启动和打开公告时都会自动读取最新公告，支持大标题、小标题、正文、列表、分隔线和 HTTPS 图片。
-- 网维无盘启动采用手动检测流程，展示 UEFI 启动项名称、网络类型、固件 GUID、设备参数和 EFI 路径。
-- 启动网维无盘前必须二次确认，只设置下一次 UEFI 启动项，不修改 BIOS 永久启动顺序。
 - 启动菜单等待时间支持 `0` 到 `999` 秒，启动系统支持保存用途备注。
 
 ---
 
 ## 公告图片测试
 
-![公告测试图片](https://raw.githubusercontent.com/168chenxin/ShuangXiTongQieHuan/master/assets/announcement/avatar.jpg)
+![公告测试图片](https://raw.githubusercontent.com/168chenxin/DuoXiTongQieHuan/master/assets/announcement/avatar.jpg)
 
 ## 项目主页
 
-[打开双系统快速切换 GitHub 项目主页](https://github.com/168chenxin/ShuangXiTongQieHuan)
+[打开双系统快速切换 GitHub 项目主页](https://github.com/168chenxin/DuoXiTongQieHuan)

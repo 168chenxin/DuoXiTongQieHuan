@@ -21,8 +21,6 @@ $testExecutable = Join-Path $outputDirectory 'BcdParserTests.exe'
     "$root\src\BcdCommandResult.cs" `
     "$root\src\BcdParser.cs" `
     "$root\src\BcdService.cs" `
-    "$root\src\FirmwareBootModels.cs" `
-    "$root\src\FirmwareBootParser.cs" `
     "$root\src\BootTimeoutWorkflow.cs" `
     "$root\tests\BcdParserTests.cs"
 
@@ -34,24 +32,6 @@ if ($LASTEXITCODE -ne 0) {
 
 if ($LASTEXITCODE -ne 0) {
     throw "Tests failed with exit code $LASTEXITCODE."
-}
-
-$firmwareTestExecutable = Join-Path $outputDirectory 'FirmwareBootParserTests.exe'
-
-& $compiler /nologo /utf8output /codepage:65001 /target:exe "/out:$firmwareTestExecutable" `
-    /r:System.dll `
-    "$root\src\FirmwareBootModels.cs" `
-    "$root\src\FirmwareBootParser.cs" `
-    "$root\tests\FirmwareBootParserTests.cs"
-
-if ($LASTEXITCODE -ne 0) {
-    throw "Firmware boot parser test compilation failed with exit code $LASTEXITCODE."
-}
-
-& $firmwareTestExecutable
-
-if ($LASTEXITCODE -ne 0) {
-    throw "Firmware boot parser tests failed with exit code $LASTEXITCODE."
 }
 
 $announcementTestExecutable = Join-Path $outputDirectory 'AnnouncementParserTests.exe'

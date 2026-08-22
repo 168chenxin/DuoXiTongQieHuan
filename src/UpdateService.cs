@@ -85,11 +85,11 @@ namespace DualBootSwitcher
 
     internal static class UpdateService
     {
-        internal const string Repository = "168chenxin/ShuangXiTongQieHuan";
+        internal const string Repository = "168chenxin/DuoXiTongQieHuan";
         internal const string RepositoryUrl = "https://github.com/" + Repository;
         internal const string ExecutableName = "DualBootSwitcher.exe";
         internal const string AnnouncementUrl = "https://api.github.com/repos/" + Repository + "/contents/ANNOUNCEMENT.md";
-        internal const string DefaultAnnouncement = "# 软件公告\r\n\r\n欢迎使用双系统快速切换。\r\n\r\n## 当前通知\r\n\r\n- 网维无盘启动会先检测本机 UEFI 网络启动项，再由用户确认后执行。\r\n- 请始终从项目主页的 Releases 下载正式版本。";
+        internal const string DefaultAnnouncement = "# 软件公告\r\n\r\n欢迎使用双系统快速切换。\r\n\r\n## 当前通知\r\n\r\n- 请始终从项目主页的 Releases 下载正式版本。";
         private const int NetworkTimeoutMilliseconds = 12000;
 
         public static UpdateInfo FindUpdate(string json, Version currentVersion)
@@ -99,7 +99,21 @@ namespace DualBootSwitcher
                 return null;
             }
 
-            GitHubRelease release = DeserializeRelease(json);
+            GitHubRelease release;
+            try
+            {
+                release = DeserializeRelease(json);
+            }
+            catch (SerializationException)
+            {
+                return null;
+            }
+
+            if (release == null)
+            {
+                return null;
+            }
+
             Version releaseVersion = ParseVersion(release.TagName);
             if (release.Draft || release.Prerelease || releaseVersion == null || releaseVersion <= currentVersion)
             {
@@ -109,6 +123,7 @@ namespace DualBootSwitcher
             GitHubReleaseAsset asset = FindExecutableAsset(release.Assets);
             string expectedDigest;
             if (asset == null || string.IsNullOrWhiteSpace(asset.DownloadUrl) ||
+                !IsHttpsUrl(asset.DownloadUrl) ||
                 !TryParseDigest(asset.Digest, out expectedDigest))
             {
                 return null;
@@ -290,6 +305,13 @@ namespace DualBootSwitcher
             }
 
             return null;
+        }
+
+        private static bool IsHttpsUrl(string value)
+        {
+            Uri uri;
+            return Uri.TryCreate(value, UriKind.Absolute, out uri) &&
+                string.Equals(uri.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase);
         }
 
         private static bool TryParseDigest(string digest, out string value)
