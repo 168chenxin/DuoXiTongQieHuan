@@ -22,21 +22,29 @@ namespace DualBootSwitcher
         private AnimatedLabel currentDefaultNameLabel;
         private AntTag currentDefaultDeviceTag;
         private AnimatedLabel nextBootNameLabel;
-        private RoundedLabel nextBootDeviceBadge;
         private AnimatedLabel entryCountLabel;
         private AnimatedLabel actionStatusLabel;
         private AnimatedLabel selectedNameLabel;
         private AnimatedLabel selectedRemarkLabel;
         private AntTag selectedDeviceTag;
         private AntTag selectedStateTag;
+        private Label defaultEyebrowLabel;
+        private Label nextBootLabel;
+        private Label bootStatusMetaLabel;
+        private RoundedLabel bootStatusDot;
+        private AntTag bootStatusPill;
         private readonly ToolTip interfaceToolTip;
         private AntButton timeoutButton;
+        private Label timeoutValueLabel;
         private AntButton refreshButton;
         private AntButton editRemarkButton;
+        private AntButton renameButton;
+        private AntButton restoreNameButton;
         private AntButton setDefaultButton;
         private AntButton setDefaultAndRestartButton;
         private AntButton announcementButton;
         private AntButton updateButton;
+        private AntButton githubButton;
         private AntPanel defaultBand;
         private AntPanel selectionPanel;
         private Panel inspectorActionPanel;
@@ -53,7 +61,10 @@ namespace DualBootSwitcher
         private AntButton settingsNavigation;
         private AntButton announcementNavigation;
         private Panel dashboardContent;
+        private Panel dashboardHeader;
+        private RoundedLabel dashboardUpdateDot;
         private AntPanel systemListCard;
+        private Label selectedIconLabel;
         private AntdUI.Input inlineRemarkInput;
         private BootRowViewModel inlineRemarkRow;
         private Label announcementTitleLabel;
@@ -74,6 +85,9 @@ namespace DualBootSwitcher
         private const int DwmWindowCornerRound = 2;
         private const int DwmSystemBackdropType = 38;
         private const int DwmBackdropTransient = 3;
+        private const string DashboardGithubSvg = "<svg viewBox=\"0 0 16 16\"><path fill=\"currentColor\" d=\"M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82A7.7 7.7 0 0 1 8 4.8c.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z\"/></svg>";
+        private const string DashboardAnnouncementGlyph = "\uE789";
+        private const string DashboardUpdateGlyph = "\uE72C";
 
         [DllImport("dwmapi.dll")]
         private static extern int DwmSetWindowAttribute(
@@ -87,7 +101,7 @@ namespace DualBootSwitcher
             Text = "双系统快速切换";
             StartPosition = FormStartPosition.CenterScreen;
             ClientSize = new Size(1080, 700);
-            MinimumSize = new Size(980, 660);
+            MinimumSize = new Size(760, 620);
             FormBorderStyle = FormBorderStyle.Sizable;
             MaximizeBox = true;
             BackColor = UiTheme.Canvas;
@@ -114,7 +128,7 @@ namespace DualBootSwitcher
                 Size = new Size(864, 92)
             };
 
-            var defaultLabel = new Label
+            defaultEyebrowLabel = new Label
             {
                 AutoSize = true,
                 Font = new Font("Segoe UI", 9F, FontStyle.Bold, GraphicsUnit.Point),
@@ -150,7 +164,7 @@ namespace DualBootSwitcher
                 Visible = false
             };
 
-            defaultBand.Controls.Add(defaultLabel);
+            defaultBand.Controls.Add(defaultEyebrowLabel);
             defaultBand.Controls.Add(currentDefaultNameLabel);
             defaultBand.Controls.Add(currentDefaultDeviceTag);
 
@@ -221,7 +235,7 @@ namespace DualBootSwitcher
                 Font = new Font("Segoe UI", 9F, FontStyle.Bold, GraphicsUnit.Point),
                 ForeColor = UiTheme.Muted,
                 Location = new Point(20, 17),
-                Text = "当前选择"
+                Text = "目标详情"
             };
 
             selectedNameLabel = new AnimatedLabel
@@ -298,6 +312,13 @@ namespace DualBootSwitcher
             editRemarkButton.AccessibleName = "编辑启动项备注";
             editRemarkButton.Click += delegate { EditSelectedRemark(); };
 
+            renameButton = UiFactory.CreateButton("重命名启动项", 112, false);
+            renameButton.AccessibleName = "重命名启动项";
+            renameButton.Click += delegate { RenameSelectedEntry(); };
+            restoreNameButton = UiFactory.CreateButton("恢复原名称", 112, false);
+            restoreNameButton.AccessibleName = "恢复启动项原名称";
+            restoreNameButton.Click += delegate { RestoreSelectedEntryName(); };
+
             selectionPanel.Controls.Add(selectionLabel);
             selectionPanel.Controls.Add(selectedNameLabel);
             selectionPanel.Controls.Add(selectedDeviceTag);
@@ -306,6 +327,8 @@ namespace DualBootSwitcher
             selectionPanel.Controls.Add(remarkLabel);
             selectionPanel.Controls.Add(selectedRemarkLabel);
             selectionPanel.Controls.Add(editRemarkButton);
+            selectionPanel.Controls.Add(renameButton);
+            selectionPanel.Controls.Add(restoreNameButton);
 
             var divider = new Panel
             {
@@ -328,6 +351,8 @@ namespace DualBootSwitcher
             };
 
             interfaceToolTip.SetToolTip(editRemarkButton, "为选中的启动系统设置用途备注");
+            interfaceToolTip.SetToolTip(renameButton, "修改 Windows 启动菜单中的显示名称");
+            interfaceToolTip.SetToolTip(restoreNameButton, "恢复首次重命名前保存的原名称");
 
             setDefaultButton = UiFactory.CreateButton("仅设为默认", 142, false);
             setDefaultButton.Location = new Point(576, 565);
@@ -536,8 +561,130 @@ namespace DualBootSwitcher
 
         private void BuildDashboardContent()
         {
+            BuildDashboardHeader();
             BuildStartupStatusBar();
             MoveCoreDashboardControls();
+        }
+
+        private void BuildDashboardHeader()
+        {
+            dashboardHeader = new Panel
+            {
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right,
+                BackColor = UiTheme.Surface,
+                Location = Point.Empty,
+                Size = new Size(dashboardContent.ClientSize.Width, UiTheme.DashboardHeaderHeight)
+            };
+
+            var logo = new HighQualityImageControl
+            {
+                BackColor = UiTheme.Surface,
+                Image = applicationLogo,
+                Location = new Point(18, 15),
+                Size = new Size(28, 28)
+            };
+            var title = new Label
+            {
+                AutoSize = true,
+                BackColor = UiTheme.Surface,
+                Font = new Font("Segoe UI", 10F, FontStyle.Bold, GraphicsUnit.Point),
+                ForeColor = UiTheme.Ink,
+                Location = new Point(56, 20),
+                Text = "双系统快速切换"
+            };
+            githubButton = UiFactory.CreateButton("GitHub", 62, false);
+            githubButton.AccessibleName = "打开 GitHub 项目主页";
+            githubButton.Click += delegate { OpenProjectHomepage(); };
+            announcementButton.AccessibleName = "查看公告";
+            updateButton.AccessibleName = "检测更新";
+            ConfigureDashboardToolButton(githubButton, string.Empty);
+            githubButton.IconSvg = DashboardGithubSvg;
+            githubButton.IconSize = new Size(17, 17);
+            ConfigureDashboardToolButton(announcementButton, DashboardAnnouncementGlyph);
+            ConfigureDashboardToolButton(updateButton, DashboardUpdateGlyph);
+            dashboardUpdateDot = new RoundedLabel
+            {
+                BackdropColor = UiTheme.Surface,
+                FillColor = UiTheme.Primary,
+                Size = new Size(6, 6),
+                Text = string.Empty
+            };
+            var divider = new Panel
+            {
+                BackColor = UiTheme.Border,
+                Location = new Point(0, 19),
+                Size = new Size(1, 20),
+                Tag = "DashboardHeaderDivider"
+            };
+            var bottomBorder = new Panel
+            {
+                Anchor = AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Bottom,
+                BackColor = UiTheme.Border,
+                Location = new Point(0, UiTheme.DashboardHeaderHeight - 1),
+                Size = new Size(dashboardContent.ClientSize.Width, 1)
+            };
+
+            interfaceToolTip.SetToolTip(githubButton, "打开 GitHub 项目主页");
+            interfaceToolTip.SetToolTip(announcementButton, "查看软件公告");
+            interfaceToolTip.SetToolTip(updateButton, "检测并安装最新版本");
+            dashboardHeader.Controls.Add(logo);
+            dashboardHeader.Controls.Add(title);
+            dashboardHeader.Controls.Add(githubButton);
+            dashboardHeader.Controls.Add(announcementButton);
+            dashboardHeader.Controls.Add(divider);
+            dashboardHeader.Controls.Add(updateButton);
+            dashboardHeader.Controls.Add(dashboardUpdateDot);
+            dashboardHeader.Controls.Add(bottomBorder);
+            dashboardHeader.Resize += delegate { LayoutDashboardHeader(); };
+            dashboardContent.Controls.Add(dashboardHeader);
+            LayoutDashboardHeader();
+        }
+
+        private void LayoutDashboardHeader()
+        {
+            if (dashboardHeader == null)
+            {
+                return;
+            }
+
+            const int toolSize = 34;
+            int right = Math.Max(18, dashboardHeader.ClientSize.Width - 18);
+            updateButton.Location = new Point(right - toolSize, 12);
+            updateButton.Size = new Size(toolSize, toolSize);
+            announcementButton.Location = new Point(updateButton.Left - 45, 12);
+            announcementButton.Size = new Size(toolSize, toolSize);
+            githubButton.Location = new Point(announcementButton.Left - 42, 12);
+            githubButton.Size = new Size(toolSize, toolSize);
+            if (dashboardUpdateDot != null)
+            {
+                dashboardUpdateDot.Location = new Point(updateButton.Left + 23, updateButton.Top + 5);
+            }
+            foreach (Control control in dashboardHeader.Controls)
+            {
+                if (Equals(control.Tag, "DashboardHeaderDivider"))
+                {
+                    control.Location = new Point(updateButton.Left - 7, 19);
+                }
+            }
+        }
+
+        private static void ConfigureDashboardToolButton(AntButton button, string glyph)
+        {
+            button.BackActive = UiTheme.SelectionStrong;
+            button.BackColor = UiTheme.Surface;
+            button.BackHover = UiTheme.AccentSoft;
+            button.BorderWidth = 0F;
+            button.Font = new Font("Segoe MDL2 Assets", 13F, FontStyle.Regular, GraphicsUnit.Point);
+            button.ForeActive = UiTheme.PrimaryHover;
+            button.ForeColor = UiTheme.HeaderMuted;
+            button.ForeHover = UiTheme.PrimaryHover;
+            button.Text = glyph;
+            button.WaveSize = UiMotion.IsEnabled ? 4 : 0;
+        }
+
+        private void SetDashboardUpdateIcon()
+        {
+            updateButton.Text = DashboardUpdateGlyph;
         }
 
         private void BuildStartupStatusBar()
@@ -548,132 +695,147 @@ namespace DualBootSwitcher
                 Back = UiTheme.Surface,
                 BorderColor = UiTheme.Border,
                 BorderWidth = 1F,
-                Location = new Point(24, 20),
-                Radius = 10,
-                Shadow = 5,
+                Location = new Point(24, 124),
+                Radius = UiTheme.WorkspaceCornerRadius,
+                Shadow = 4,
                 ShadowColor = UiTheme.Border,
                 ShadowOffsetY = 1,
-                ShadowOpacity = 0.12F,
-                Size = new Size(832, 124)
+                ShadowOpacity = 0.09F,
+                Size = new Size(832, UiTheme.DashboardSummaryBandHeight)
             };
 
-            defaultBand.Location = new Point(20, 18);
-            defaultBand.Size = new Size(270, 88);
+            defaultBand.Location = new Point(17, 14);
+            defaultBand.Size = new Size(260, 60);
             defaultBand.Anchor = AnchorStyles.Top | AnchorStyles.Left;
             defaultBand.Back = UiTheme.Surface;
             defaultBand.BorderWidth = 0F;
             defaultBand.Radius = 0;
+            defaultBand.Shadow = 0;
+            defaultEyebrowLabel.Text = "当前默认系统";
+            defaultEyebrowLabel.Location = new Point(0, 0);
+            defaultEyebrowLabel.BackColor = UiTheme.Surface;
             currentDefaultNameLabel.BackdropColor = UiTheme.Surface;
-            currentDefaultNameLabel.Font = new Font("Segoe UI", 13F, FontStyle.Bold, GraphicsUnit.Point);
-            currentDefaultNameLabel.Location = new Point(0, 39);
-            currentDefaultNameLabel.Size = new Size(250, 30);
-            currentDefaultDeviceTag.Location = new Point(0, 68);
-            currentDefaultDeviceTag.Size = new Size(92, 26);
-            currentDefaultDeviceTag.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            currentDefaultDeviceTag.Visible = false;
-            var nextBootLabel = new Label
+            currentDefaultNameLabel.Font = new Font("Segoe UI", 12F, FontStyle.Bold, GraphicsUnit.Point);
+            currentDefaultNameLabel.Location = new Point(0, 19);
+            currentDefaultNameLabel.Size = new Size(240, 24);
+            currentDefaultDeviceTag.BackColor = UiTheme.Surface;
+            currentDefaultDeviceTag.Font = new Font("Segoe UI", 8.5F, FontStyle.Regular, GraphicsUnit.Point);
+            currentDefaultDeviceTag.ForeColor = UiTheme.Muted;
+            currentDefaultDeviceTag.Location = new Point(0, 45);
+            currentDefaultDeviceTag.Size = new Size(250, 18);
+            currentDefaultDeviceTag.Anchor = AnchorStyles.Top | AnchorStyles.Left;
+            currentDefaultDeviceTag.TextAlign = ContentAlignment.MiddleLeft;
+            currentDefaultDeviceTag.Visible = true;
+            nextBootLabel = new Label
             {
                 AutoSize = true,
                 BackColor = Color.Transparent,
                 Font = new Font("Segoe UI", 8.5F, FontStyle.Bold, GraphicsUnit.Point),
                 ForeColor = UiTheme.Muted,
-                Location = new Point(330, 20),
-                Text = "下次启动"
+                Location = new Point(330, 15),
+                Text = "下次启动目标"
             };
             nextBootNameLabel = new AnimatedLabel
             {
                 AutoEllipsis = true,
                 AutoSize = false,
                 BackdropColor = UiTheme.Surface,
-                Font = new Font("Segoe UI", 12F, FontStyle.Bold, GraphicsUnit.Point),
+                Font = new Font("Segoe UI", 13F, FontStyle.Bold, GraphicsUnit.Point),
                 ForeColor = UiTheme.Ink,
-                Location = new Point(330, 42),
-                Size = new Size(190, 28),
+                Location = new Point(330, 34),
+                Size = new Size(230, 24),
                 Text = "请选择启动系统"
             };
-            nextBootDeviceBadge = new RoundedLabel
+            bootStatusMetaLabel = new Label
             {
-                BackdropColor = UiTheme.Surface,
-                FillColor = UiTheme.AccentSoft,
-                Font = new Font("Segoe UI", 8.5F, FontStyle.Bold, GraphicsUnit.Point),
-                ForeColor = UiTheme.Accent,
-                Location = new Point(330, 74),
-                Size = new Size(64, 24),
-                Text = "--",
-                TextAlign = ContentAlignment.MiddleCenter
-            };
-
-            var statusDivider = new Panel
-            {
-                Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Right,
-                BackColor = UiTheme.Border,
-                Location = new Point(300, 18),
-                Size = new Size(1, 88)
-            };
-            var announcementDot = new RoundedLabel
-            {
-                Anchor = AnchorStyles.Top | AnchorStyles.Right,
-                BackdropColor = UiTheme.Surface,
-                FillColor = UiTheme.Accent,
-                Location = new Point(548, 25),
-                Size = new Size(10, 10),
-                Text = string.Empty
-            };
-            var announcementLabel = new Label
-            {
-                Anchor = AnchorStyles.Top | AnchorStyles.Right,
-                AutoSize = true,
-                BackColor = Color.Transparent,
-                Font = new Font("Segoe UI", 9.5F, FontStyle.Bold, GraphicsUnit.Point),
-                ForeColor = UiTheme.Ink,
-                Location = new Point(566, 20),
-                Text = "项目动态"
-            };
-            announcementTitleLabel = new Label
-            {
-                Anchor = AnchorStyles.Top | AnchorStyles.Right,
-                AutoEllipsis = true,
-                AutoSize = false,
-                BackColor = Color.Transparent,
-                Cursor = Cursors.Hand,
-                Font = new Font("Segoe UI", 10.5F, FontStyle.Bold, GraphicsUnit.Point),
-                ForeColor = UiTheme.Ink,
-                Location = new Point(548, 50),
-                Size = new Size(270, 25),
-                Text = "正在同步最新公告...",
-                TextAlign = ContentAlignment.MiddleLeft
-            };
-            announcementDateLabel = new Label
-            {
-                Anchor = AnchorStyles.Top | AnchorStyles.Right,
                 AutoEllipsis = true,
                 AutoSize = false,
                 BackColor = Color.Transparent,
                 Font = new Font("Segoe UI", 8.5F, FontStyle.Regular, GraphicsUnit.Point),
                 ForeColor = UiTheme.Muted,
-                Location = new Point(548, 76),
-                Size = new Size(250, 20),
+                Location = new Point(330, 60),
+                Size = new Size(230, 18),
+                Text = "请选择启动项"
+            };
+            bootStatusDot = new RoundedLabel
+            {
+                BackdropColor = UiTheme.Surface,
+                FillColor = UiTheme.Accent,
+                Location = new Point(308, 30),
+                Size = new Size(10, 10),
+                Text = string.Empty
+            };
+            bootStatusDot.Visible = false;
+            bootStatusPill = new AntTag
+            {
+                AutoSize = false,
+                BackColor = UiTheme.AccentSoft,
+                BorderWidth = 0F,
+                Font = new Font("Segoe UI", 8.5F, FontStyle.Bold, GraphicsUnit.Point),
+                ForeColor = UiTheme.Accent,
+                Location = new Point(650, 34),
+                Size = new Size(142, 28),
+                Radius = UiTheme.BadgeCornerRadius,
+                Text = "等待选择",
+                TextAlign = ContentAlignment.MiddleCenter
+            };
+            bootStatusPill.Visible = false;
+
+            var announcementDot = new RoundedLabel
+            {
+                BackdropColor = UiTheme.Surface,
+                FillColor = UiTheme.Accent,
+                Location = new Point(600, 13),
+                Size = new Size(8, 8),
+                Text = string.Empty
+            };
+            var announcementLabel = new Label
+            {
+                AutoSize = true,
+                BackColor = UiTheme.Surface,
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold, GraphicsUnit.Point),
+                ForeColor = UiTheme.Muted,
+                Location = new Point(614, 8),
+                Text = "项目动态"
+            };
+            announcementTitleLabel = new Label
+            {
+                AutoEllipsis = true,
+                AutoSize = false,
+                BackColor = UiTheme.Surface,
+                Cursor = Cursors.Hand,
+                Font = new Font("Segoe UI", 10F, FontStyle.Bold, GraphicsUnit.Point),
+                ForeColor = UiTheme.Ink,
+                Location = new Point(600, 35),
+                Size = new Size(250, 22),
+                Text = "正在同步最新公告...",
+                TextAlign = ContentAlignment.MiddleLeft
+            };
+            announcementDateLabel = new Label
+            {
+                AutoEllipsis = true,
+                AutoSize = false,
+                BackColor = UiTheme.Surface,
+                Font = new Font("Segoe UI", 8.5F, FontStyle.Regular, GraphicsUnit.Point),
+                ForeColor = UiTheme.Muted,
+                Location = new Point(600, 58),
+                Size = new Size(250, 18),
                 Text = "正在同步公告"
             };
             announcementTitleLabel.Click += delegate { ShowAnnouncement(); };
             announcementDateLabel.Click += delegate { ShowAnnouncement(); };
 
-            announcementButton.Text = "查看公告";
-            announcementButton.Size = new Size(96, 30);
-            announcementButton.Visible = true;
-            announcementButton.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-
             Version version = Assembly.GetExecutingAssembly().GetName().Version;
             updateStatusLabel = new Label
             {
-                Anchor = AnchorStyles.Top | AnchorStyles.Right,
                 AutoEllipsis = true,
                 AutoSize = false,
-                BackColor = Color.Transparent,
+                BackColor = UiTheme.Surface,
                 Cursor = Cursors.Hand,
                 Font = new Font("Segoe UI", 8.5F, FontStyle.Bold, GraphicsUnit.Point),
                 ForeColor = UiTheme.Accent,
-                Size = new Size(190, 22),
+                Location = new Point(600, 100),
+                Size = new Size(230, 18),
                 Text = "v" + version.ToString(3) + "  ·  正在检查更新",
                 TextAlign = ContentAlignment.MiddleLeft
             };
@@ -681,24 +843,23 @@ namespace DualBootSwitcher
             interfaceToolTip.SetToolTip(updateStatusLabel, "点击检查更新或安装可用版本");
             var announcementDivider = new Panel
             {
-                Anchor = AnchorStyles.Top | AnchorStyles.Right,
                 BackColor = UiTheme.Border,
-                Location = new Point(548, 104),
-                Size = new Size(250, 1)
+                Location = new Point(580, 16),
+                Size = new Size(1, 96)
+            };
+            var statusDivider = new Panel
+            {
+                BackColor = UiTheme.Border,
+                Location = new Point(295, 15),
+                Size = new Size(1, 58),
+                Tag = "DashboardStatusDivider"
             };
 
             systemsWorkspacePanel.Controls.Add(defaultBand);
+            systemsWorkspacePanel.Controls.Add(statusDivider);
             systemsWorkspacePanel.Controls.Add(nextBootLabel);
             systemsWorkspacePanel.Controls.Add(nextBootNameLabel);
-            systemsWorkspacePanel.Controls.Add(nextBootDeviceBadge);
-            systemsWorkspacePanel.Controls.Add(statusDivider);
-            systemsWorkspacePanel.Controls.Add(announcementDot);
-            systemsWorkspacePanel.Controls.Add(announcementLabel);
-            systemsWorkspacePanel.Controls.Add(announcementTitleLabel);
-            systemsWorkspacePanel.Controls.Add(announcementDateLabel);
-            systemsWorkspacePanel.Controls.Add(announcementButton);
-            systemsWorkspacePanel.Controls.Add(announcementDivider);
-            systemsWorkspacePanel.Controls.Add(updateStatusLabel);
+            systemsWorkspacePanel.Controls.Add(bootStatusMetaLabel);
             dashboardContent.Controls.Add(systemsWorkspacePanel);
         }
 
@@ -707,8 +868,17 @@ namespace DualBootSwitcher
             bootMenuLabel = FindLabel("选择下次启动系统");
             if (bootMenuLabel != null)
             {
-                bootMenuLabel.Text = "引导系统";
+                bootMenuLabel.Text = "启动项";
                 bootMenuLabel.Font = new Font("Segoe UI", 11F, FontStyle.Bold, GraphicsUnit.Point);
+            }
+
+            foreach (Control control in selectionPanel.Controls)
+            {
+                var label = control as Label;
+                if (label != null && label.Text == "目标详情")
+                {
+                    label.Text = "目标详情";
+                }
             }
 
             bootEntriesTable.Columns.Clear();
@@ -787,23 +957,42 @@ namespace DualBootSwitcher
             inlineRemarkInput.LostFocus += delegate { CancelInlineRemarkEdit(); };
 
             selectionPanel.Back = UiTheme.Surface;
-            selectionPanel.BorderWidth = 0F;
+            selectionPanel.BorderColor = UiTheme.Border;
+            selectionPanel.BorderWidth = 1F;
             selectionPanel.Radius = UiTheme.WorkspaceCornerRadius;
-            selectionPanel.Shadow = 8;
+            selectionPanel.Shadow = 4;
             selectionPanel.ShadowColor = UiTheme.Border;
-            selectionPanel.ShadowOffsetY = 2;
-            selectionPanel.ShadowOpacity = 0.07F;
+            selectionPanel.ShadowOffsetY = 1;
+            selectionPanel.ShadowOpacity = 0.06F;
             SetSelectionPanelBackdrop(UiTheme.Surface);
             selectedNameLabel.Font = new Font("Segoe UI", 13F, FontStyle.Bold, GraphicsUnit.Point);
             selectedDeviceTag.TextAlign = ContentAlignment.MiddleCenter;
-            editRemarkButton.Text = "编辑备注";
-            editRemarkButton.Visible = false;
+            editRemarkButton.Text = "编辑用途备注";
+            editRemarkButton.BackColor = UiTheme.Surface;
+            editRemarkButton.BackHover = UiTheme.AccentSoft;
+            editRemarkButton.BackActive = UiTheme.SelectionStrong;
+            editRemarkButton.BorderWidth = 0F;
+            editRemarkButton.DefaultBorderColor = Color.Transparent;
+            editRemarkButton.ForeColor = UiTheme.PrimaryHover;
+            editRemarkButton.ForeHover = UiTheme.PrimaryHover;
+            editRemarkButton.ForeActive = UiTheme.PrimaryPressed;
+            editRemarkButton.Visible = true;
+            renameButton.Text = "重命名";
+            renameButton.BackColor = UiTheme.Surface;
+            renameButton.BackHover = UiTheme.AccentSoft;
+            renameButton.BackActive = UiTheme.SelectionStrong;
+            renameButton.BorderWidth = 0F;
+            renameButton.DefaultBorderColor = Color.Transparent;
+            renameButton.ForeColor = UiTheme.PrimaryHover;
+            renameButton.ForeHover = UiTheme.PrimaryHover;
+            renameButton.ForeActive = UiTheme.PrimaryPressed;
+            restoreNameButton.Text = "恢复原名称";
             setDefaultAndRestartButton.Text = "切换并重启";
             setDefaultAndRestartButton.Padding = Padding.Empty;
             setDefaultAndRestartButton.Text = "切换并重启";
             setDefaultAndRestartButton.IconSvg = null;
 
-            var diskIcon = new Label
+            selectedIconLabel = new Label
             {
                 BackColor = UiTheme.Surface,
                 Font = new Font("Segoe MDL2 Assets", 25F, FontStyle.Regular, GraphicsUnit.Point),
@@ -813,24 +1002,39 @@ namespace DualBootSwitcher
                 Text = "\uE7F4",
                 TextAlign = ContentAlignment.MiddleCenter
             };
-            selectionPanel.Controls.Add(diskIcon);
+            selectedIconLabel.Visible = false;
+            selectionPanel.Controls.Add(selectedIconLabel);
 
             systemListCard = new AntPanel
             {
                 Back = UiTheme.Surface,
-                BorderWidth = 0F,
+                BorderColor = UiTheme.Border,
+                BorderWidth = 1F,
                 Radius = UiTheme.WorkspaceCornerRadius,
-                Shadow = 8,
+                Shadow = 4,
                 ShadowColor = UiTheme.Border,
-                ShadowOffsetY = 2,
-                ShadowOpacity = 0.07F
+                ShadowOffsetY = 1,
+                ShadowOpacity = 0.06F
+            };
+            entryCountLabel.TextAlign = ContentAlignment.MiddleLeft;
+            timeoutValueLabel = new Label
+            {
+                AutoEllipsis = true,
+                AutoSize = false,
+                BackColor = UiTheme.Surface,
+                Font = new Font("Segoe UI", 8.5F, FontStyle.Regular, GraphicsUnit.Point),
+                ForeColor = UiTheme.Muted,
+                Size = new Size(110, 20),
+                Text = "启动等待：读取中...",
+                TextAlign = ContentAlignment.MiddleRight
             };
             systemListCard.Controls.Add(bootMenuLabel);
             systemListCard.Controls.Add(entryCountLabel);
+            systemListCard.Controls.Add(timeoutValueLabel);
             systemListCard.Controls.Add(timeoutButton);
-            systemListCard.Controls.Add(refreshButton);
             systemListCard.Controls.Add(appleBootList);
             systemListCard.Controls.Add(inlineRemarkInput);
+            systemListCard.Controls.Add(refreshButton);
             selectionPanel.Controls.Add(actionStatusLabel);
             inspectorActionPanel = new Panel
             {
@@ -858,7 +1062,7 @@ namespace DualBootSwitcher
             }
             defaultBand.Visible = true;
             timeoutButton.Visible = true;
-            updateButton.Visible = false;
+            updateButton.Visible = true;
         }
 
         private void LayoutAppleDashboard()
@@ -870,15 +1074,15 @@ namespace DualBootSwitcher
 
             int width = dashboardContent.ClientSize.Width;
             int height = dashboardContent.ClientSize.Height;
-            int outerMargin = 24;
+            int outerMargin = 18;
             int cardGap = 16;
-            int statusBarHeight = 124;
-            int coreTop = 20 + statusBarHeight + cardGap;
+            int summaryTop = UiTheme.DashboardHeaderHeight + outerMargin;
+            int coreTop = summaryTop + UiTheme.DashboardSummaryBandHeight + cardGap;
             int usableWidth = Math.Max(0, width - (outerMargin * 2));
-            int availableCoreHeight = Math.Max(0, height - coreTop - 20);
-            const int minimumListWidth = 300;
-            const int minimumInspectorWidth = 264;
-            bool stacked = usableWidth < minimumListWidth + cardGap + minimumInspectorWidth;
+            int availableCoreHeight = Math.Max(0, height - coreTop - outerMargin);
+            const int minimumListWidth = 380;
+            const int inspectorWidth = 350;
+            bool stacked = usableWidth < minimumListWidth + cardGap + inspectorWidth;
             int leftWidth;
             int rightWidth;
             int listHeight;
@@ -888,50 +1092,62 @@ namespace DualBootSwitcher
             {
                 leftWidth = usableWidth;
                 rightWidth = usableWidth;
-                listHeight = 346;
-                inspectorHeight = 326;
+                listHeight = 330;
+                inspectorHeight = 360;
                 dashboardContent.AutoScroll = true;
                 dashboardContent.AutoScrollMinSize = new Size(
-                    Math.Max(width, outerMargin * 2 + 1),
+                    0,
                     coreTop + listHeight + cardGap + inspectorHeight + 24);
             }
             else
             {
-                leftWidth = Math.Max(minimumListWidth,
-                    (int)Math.Round((usableWidth - cardGap) * 0.64));
-                rightWidth = Math.Max(minimumInspectorWidth,
-                    usableWidth - cardGap - leftWidth);
-                listHeight = Math.Max(296, availableCoreHeight);
+                leftWidth = Math.Max(minimumListWidth, usableWidth - cardGap - inspectorWidth);
+                rightWidth = usableWidth - cardGap - leftWidth;
+                listHeight = Math.Max(300, availableCoreHeight);
                 inspectorHeight = listHeight;
                 dashboardContent.AutoScroll = false;
                 dashboardContent.AutoScrollMinSize = Size.Empty;
             }
 
-            systemsWorkspacePanel.Location = new Point(24, 20);
-            systemsWorkspacePanel.Size = new Size(usableWidth, statusBarHeight);
+            systemsWorkspacePanel.Location = new Point(outerMargin, summaryTop);
+            systemsWorkspacePanel.Size = new Size(usableWidth, UiTheme.DashboardSummaryBandHeight);
             LayoutStartupStatusBar(usableWidth);
 
-            systemListCard.Location = new Point(24, coreTop);
+            systemListCard.Location = new Point(outerMargin, coreTop);
             systemListCard.Size = new Size(Math.Max(0, leftWidth), listHeight);
-            bootMenuLabel.Location = new Point(20, 16);
-            entryCountLabel.Location = new Point(20, 43);
-            entryCountLabel.Size = new Size(110, 24);
+            bootMenuLabel.Location = new Point(17, 20);
+            entryCountLabel.Location = new Point(75, 21);
+            entryCountLabel.Size = new Size(120, 20);
             entryCountLabel.BackdropColor = UiTheme.Surface;
+            const int toolbarRight = 17;
+            const int toolbarGap = 8;
+            int refreshWidth = Math.Min(96, Math.Max(84, leftWidth / 6));
+            int timeoutWidth = 52;
+            int timeoutLabelWidth = 104;
             refreshButton.Text = "刷新";
-            refreshButton.IconSvg = null;
-            refreshButton.Padding = Padding.Empty;
-            timeoutButton.Location = new Point(Math.Max(20, leftWidth - 222), 20);
-            timeoutButton.Size = new Size(122, 38);
-            refreshButton.Location = new Point(Math.Max(20, leftWidth - 90), 20);
-            refreshButton.Size = new Size(70, 38);
-            appleBootList.Location = new Point(18, 76);
+            refreshButton.Location = new Point(
+                Math.Max(0, leftWidth - toolbarRight - refreshWidth),
+                13);
+            refreshButton.Size = new Size(refreshWidth, 34);
+            timeoutButton.Location = new Point(
+                Math.Max(0, refreshButton.Left - toolbarGap - timeoutWidth),
+                13);
+            timeoutButton.Size = new Size(timeoutWidth, 34);
+            timeoutValueLabel.Location = new Point(
+                Math.Max(80, timeoutButton.Left - toolbarGap - timeoutLabelWidth),
+                20);
+            timeoutValueLabel.Size = new Size(
+                Math.Max(1, timeoutButton.Left - toolbarGap - timeoutValueLabel.Left),
+                20);
+            entryCountLabel.Visible = leftWidth >= 470;
+            appleBootList.Location = new Point(0, 60);
             appleBootList.Size = new Size(
-                Math.Max(0, leftWidth - 36),
-                Math.Max(0, listHeight - 92));
+                Math.Max(0, leftWidth),
+                Math.Max(0, listHeight - 60));
 
             selectionPanel.Location = stacked
-                ? new Point(24, coreTop + listHeight + cardGap)
-                : new Point(24 + leftWidth + cardGap, coreTop);
+                ? new Point(outerMargin, coreTop + listHeight + cardGap)
+                : new Point(outerMargin + leftWidth + cardGap, coreTop);
             selectionPanel.Size = new Size(Math.Max(0, rightWidth), inspectorHeight);
             LayoutDashboardInspector(Math.Max(0, rightWidth), inspectorHeight);
         }
@@ -939,73 +1155,41 @@ namespace DualBootSwitcher
         private void LayoutStartupStatusBar(int width)
         {
             int safeWidth = Math.Max(0, width);
-            int announcementWidth = Math.Max(252, (int)Math.Round(safeWidth * 0.32));
-            int announcementLeft = Math.Max(520, safeWidth - announcementWidth);
-            int defaultWidth = Math.Max(250, Math.Min(300, announcementLeft - 44));
-            int nextLeft = defaultWidth + 46;
-            int nextWidth = Math.Max(130, announcementLeft - nextLeft - 24);
+            int defaultWidth = Math.Max(190, (safeWidth - 52) / 2);
+            int nextLeft = defaultWidth + 35;
+            int nextWidth = Math.Max(150, safeWidth - nextLeft - 34);
 
-            defaultBand.Location = new Point(20, 18);
-            defaultBand.Size = new Size(defaultWidth, 88);
-            currentDefaultNameLabel.Location = new Point(0, 39);
-            currentDefaultNameLabel.Size = new Size(Math.Max(120, defaultWidth - 104), 30);
-            currentDefaultDeviceTag.Location = new Point(Math.Max(0, defaultWidth - 92), 68);
+            defaultBand.Location = new Point(17, 14);
+            defaultBand.Size = new Size(defaultWidth, 62);
+            defaultEyebrowLabel.Location = new Point(0, 0);
+            currentDefaultNameLabel.Location = new Point(0, 19);
+            currentDefaultNameLabel.Size = new Size(defaultWidth, 24);
+            currentDefaultDeviceTag.Location = new Point(0, 45);
+            currentDefaultDeviceTag.Size = new Size(defaultWidth, 18);
 
-            foreach (Control control in systemsWorkspacePanel.Controls)
+            if (nextBootLabel != null)
             {
-                var label = control as Label;
-                if (label != null && label.Text == "下次启动")
-                {
-                    label.Location = new Point(nextLeft, 20);
-                }
+                nextBootLabel.Location = new Point(nextLeft, 15);
             }
             if (nextBootNameLabel != null)
             {
-                nextBootNameLabel.Location = new Point(nextLeft, 42);
-                nextBootNameLabel.Size = new Size(nextWidth, 28);
+                nextBootNameLabel.Location = new Point(nextLeft, 34);
+                nextBootNameLabel.Size = new Size(nextWidth, 24);
             }
-            if (nextBootDeviceBadge != null)
+            if (bootStatusMetaLabel != null)
             {
-                nextBootDeviceBadge.Location = new Point(nextLeft, 74);
+                bootStatusMetaLabel.Location = new Point(nextLeft, 60);
+                bootStatusMetaLabel.Size = new Size(nextWidth, 18);
             }
-
             foreach (Control control in systemsWorkspacePanel.Controls)
             {
-                if (control.Width == 1 && control.Height > 1)
+                if (Equals(control.Tag, "DashboardStatusDivider"))
                 {
-                    control.Location = new Point(announcementLeft - 20, 18);
-                    control.Height = Math.Max(1, systemsWorkspacePanel.Height - 36);
+                    control.Location = new Point(nextLeft - 18, 15);
+                    control.Size = new Size(1, 58);
                 }
             }
 
-            int sectionLeft = announcementLeft + 8;
-            int sectionRight = Math.Max(sectionLeft + 180, safeWidth - 20);
-            foreach (Control control in systemsWorkspacePanel.Controls)
-            {
-                var rounded = control as RoundedLabel;
-                if (rounded != null && rounded.Size == new Size(10, 10))
-                {
-                    rounded.Location = new Point(sectionLeft, 24);
-                }
-                var label = control as Label;
-                if (label != null && label.Text == "项目动态")
-                {
-                    label.Location = new Point(sectionLeft + 18, 19);
-                }
-                if (control is Panel && control.Height == 1)
-                {
-                    control.Location = new Point(sectionLeft, 104);
-                    control.Width = Math.Max(1, sectionRight - sectionLeft);
-                }
-            }
-            announcementButton.Location = new Point(
-                Math.Max(sectionLeft, sectionRight - announcementButton.Width), 15);
-            announcementTitleLabel.Location = new Point(sectionLeft, 50);
-            announcementTitleLabel.Size = new Size(Math.Max(120, sectionRight - sectionLeft), 24);
-            announcementDateLabel.Location = new Point(sectionLeft, 76);
-            announcementDateLabel.Size = new Size(Math.Max(120, sectionRight - sectionLeft), 20);
-            updateStatusLabel.Location = new Point(sectionLeft, 108);
-            updateStatusLabel.Size = new Size(Math.Max(120, sectionRight - sectionLeft), 21);
         }
 
         private void LayoutDashboardInspector(int width, int height)
@@ -1016,45 +1200,52 @@ namespace DualBootSwitcher
             foreach (Control control in selectionPanel.Controls)
             {
                 var label = control as Label;
-                if (label != null && label.Text == "当前选择")
+                if (label != null && label.Text == "目标详情")
                 {
-                    label.Location = new Point(76, 16);
+                    label.Location = new Point(20, 17);
                 }
                 if (label != null && label.Text == "用途备注")
                 {
-                    label.Location = new Point(20, 139);
+                    label.Location = new Point(20, 130);
                 }
             }
 
-            selectedNameLabel.Location = new Point(72, 39);
-            selectedNameLabel.Size = new Size(Math.Max(1, safeWidth - 92), 32);
-            selectedDeviceTag.Location = new Point(20, 84);
-            selectedStateTag.Location = new Point(106, 84);
+            selectedNameLabel.Location = new Point(20, 39);
+            selectedNameLabel.Size = new Size(contentWidth, 27);
+            selectedDeviceTag.Location = new Point(20, 77);
+            selectedDeviceTag.Size = new Size(62, 26);
+            selectedStateTag.Location = new Point(90, 77);
+            selectedStateTag.Size = new Size(Math.Min(120, Math.Max(100, contentWidth - 70)), 26);
             foreach (Control control in selectionPanel.Controls)
             {
                 if (control is Panel && control.Height == 1)
                 {
-                    control.Location = new Point(20, 126);
+                    control.Location = new Point(20, 113);
                     control.Width = contentWidth;
                 }
             }
 
-            selectedRemarkLabel.Location = new Point(20, 158);
+            selectedRemarkLabel.Location = new Point(20, 150);
             selectedRemarkLabel.Size = new Size(contentWidth, 26);
-            inspectorActionPanel.Location = new Point(14, Math.Max(0, safeHeight - 100));
-            inspectorActionPanel.Size = new Size(Math.Max(1, safeWidth - 28), 88);
+            renameButton.Visible = true;
+            restoreNameButton.Visible = false;
+            editRemarkButton.Visible = true;
+            editRemarkButton.Location = new Point(20, 181);
+            editRemarkButton.Size = new Size(88, 32);
+            renameButton.Location = new Point(116, 181);
+            renameButton.Size = new Size(88, 32);
+            inspectorActionPanel.Location = new Point(14, Math.Max(0, safeHeight - 132));
+            inspectorActionPanel.Size = new Size(Math.Max(1, safeWidth - 28), 120);
             inspectorActionPanel.BringToFront();
             actionStatusLabel.BackdropColor = UiTheme.Surface;
             actionStatusLabel.Location = new Point(6, 5);
-            actionStatusLabel.Size = new Size(Math.Max(1, inspectorActionPanel.Width - 12), 23);
+            actionStatusLabel.Size = new Size(Math.Max(1, inspectorActionPanel.Width - 12), 25);
             actionStatusLabel.TextAlign = ContentAlignment.MiddleLeft;
-            setDefaultButton.Location = new Point(6, 34);
-            int actionWidth = Math.Max(1, inspectorActionPanel.Width - 24);
-            setDefaultButton.Size = new Size(Math.Max(1, actionWidth / 2), 40);
-            setDefaultAndRestartButton.Location = new Point(setDefaultButton.Right + 12, 34);
+            setDefaultButton.Location = new Point(6, 42);
+            setDefaultButton.Size = new Size(Math.Max(1, inspectorActionPanel.Width - 12), 32);
+            setDefaultAndRestartButton.Location = new Point(6, 80);
             setDefaultAndRestartButton.Size = new Size(
-                Math.Max(1, inspectorActionPanel.Width - setDefaultButton.Right - 18),
-                40);
+                Math.Max(1, inspectorActionPanel.Width - 12), 34);
         }
 
         private async Task LoadAnnouncementSummaryAsync()
@@ -1149,7 +1340,7 @@ namespace DualBootSwitcher
             }
 
             SelectBootRow(row, false);
-            BeginInlineRemarkEdit(row, eventArgs.Index);
+            RenameSelectedEntry();
         }
 
         private void BeginInlineRemarkEdit(BootRowViewModel row, int rowIndex)
@@ -1543,6 +1734,8 @@ namespace DualBootSwitcher
             int height = selectionPanel.ClientSize.Height;
             selectedNameLabel.Size = new Size(Math.Max(120, width - 40), 30);
             selectedRemarkLabel.Size = new Size(Math.Max(120, width - 40), 40);
+            renameButton.Visible = false;
+            restoreNameButton.Visible = false;
             editRemarkButton.Location = new Point(20, Math.Max(198, height - 54));
             editRemarkButton.Size = new Size(Math.Max(120, width - 40), 34);
         }
@@ -1810,13 +2003,13 @@ namespace DualBootSwitcher
 
             updateButton.Enabled = false;
             updateButton.Loading = true;
-            updateButton.Text = "正在下载 " + availableUpdate.Tag;
+            SetDashboardUpdateIcon();
             try
             {
                 UpdateInfo update = availableUpdate;
                 string downloadedPath = await Task.Run(
                     () => UpdateService.DownloadAndVerify(update, CancellationToken.None));
-                updateButton.Text = "正在安装更新";
+                SetDashboardUpdateIcon();
                 UpdateService.ReplaceAndRestart(downloadedPath);
                 Close();
             }
@@ -1824,7 +2017,7 @@ namespace DualBootSwitcher
             {
                 updateButton.Loading = false;
                 updateButton.Enabled = true;
-                updateButton.Text = "发现 " + availableUpdate.Tag + " 更新";
+                SetDashboardUpdateIcon();
                 UiDialogs.ShowError(
                     this,
                     "云端更新失败",
@@ -1842,7 +2035,7 @@ namespace DualBootSwitcher
             isCheckingForUpdates = true;
             updateButton.Enabled = false;
             updateButton.Loading = true;
-            updateButton.Text = "正在检查更新";
+            SetDashboardUpdateIcon();
             if (updateStatusLabel != null)
             {
                 updateStatusLabel.Text = "正在静默检查更新";
@@ -1860,7 +2053,7 @@ namespace DualBootSwitcher
                 updateButton.Enabled = true;
                 if (availableUpdate == null)
                 {
-                    updateButton.Text = "检查更新";
+                    SetDashboardUpdateIcon();
                     if (updateStatusLabel != null)
                     {
                         updateStatusLabel.Text = "v" + currentVersion.ToString(3) + "  ·  已是最新版本";
@@ -1875,7 +2068,7 @@ namespace DualBootSwitcher
                 }
                 else
                 {
-                    updateButton.Text = "发现 " + availableUpdate.Tag + " 更新";
+                    SetDashboardUpdateIcon();
                     if (updateStatusLabel != null)
                     {
                         updateStatusLabel.Text = "发现 " + availableUpdate.Tag + " 更新  ·  点击安装";
@@ -1894,7 +2087,7 @@ namespace DualBootSwitcher
 
                 updateButton.Loading = false;
                 updateButton.Enabled = true;
-                updateButton.Text = "检查更新";
+                SetDashboardUpdateIcon();
                 if (updateStatusLabel != null)
                 {
                     updateStatusLabel.Text = "更新检查失败  ·  点击重试";
@@ -1927,7 +2120,11 @@ namespace DualBootSwitcher
             refreshButton.Enabled = false;
             refreshButton.Loading = true;
             timeoutButton.Enabled = false;
-            timeoutButton.Text = "启动等待：读取中...";
+            timeoutButton.Text = "修改";
+            if (timeoutValueLabel != null)
+            {
+                timeoutValueLabel.Text = "启动等待：读取中...";
+            }
             currentTimeoutSeconds = -1;
             bootEntriesTable.Enabled = false;
             if (appleBootList != null)
@@ -1952,11 +2149,6 @@ namespace DualBootSwitcher
             if (nextBootNameLabel != null)
             {
                 nextBootNameLabel.Text = "请选择启动系统";
-            }
-            if (nextBootDeviceBadge != null)
-            {
-                nextBootDeviceBadge.Text = "--";
-                nextBootDeviceBadge.Visible = false;
             }
             actionStatusLabel.Text = "正在读取 Windows 启动菜单...";
             interfaceToolTip.SetToolTip(currentDefaultDeviceTag, string.Empty);
@@ -2007,7 +2199,11 @@ namespace DualBootSwitcher
 
                 currentDefaultNameLabel.Text = "无法读取启动项";
                 currentDefaultDeviceTag.Visible = false;
-                timeoutButton.Text = "启动等待：读取失败";
+                timeoutButton.Text = "修改";
+                if (timeoutValueLabel != null)
+                {
+                    timeoutValueLabel.Text = "启动等待：读取失败";
+                }
                 timeoutButton.Enabled = false;
                 actionStatusLabel.Text = "请检查 Windows 引导配置或系统接口兼容性";
                 UiDialogs.ShowError(
@@ -2041,12 +2237,29 @@ namespace DualBootSwitcher
             }
         }
 
+        private void OpenProjectHomepage()
+        {
+            try
+            {
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = UpdateService.RepositoryUrl,
+                    UseShellExecute = true
+                });
+            }
+            catch (Exception exception)
+            {
+                UiDialogs.ShowError(this, "无法打开项目主页", exception.Message);
+            }
+        }
+
         private void SetCurrentDefault(BootEntry defaultEntry)
         {
             if (defaultEntry == null)
             {
                 currentDefaultNameLabel.Text = "未识别默认系统";
-                currentDefaultDeviceTag.Visible = false;
+                currentDefaultDeviceTag.Text = "未识别启动设备";
+                currentDefaultDeviceTag.Visible = true;
                 interfaceToolTip.SetToolTip(currentDefaultNameLabel, string.Empty);
                 interfaceToolTip.SetToolTip(currentDefaultDeviceTag, string.Empty);
                 return;
@@ -2054,10 +2267,11 @@ namespace DualBootSwitcher
 
             string displayName = GetEntryDisplayName(defaultEntry);
             currentDefaultNameLabel.Text = displayName;
-            currentDefaultDeviceTag.Text = defaultEntry.Device;
+            string timeout = currentTimeoutSeconds >= 0 ? currentTimeoutSeconds.ToString() : "--";
+            currentDefaultDeviceTag.Text = defaultEntry.Device + " · 启动等待 " + timeout + " 秒";
             currentDefaultDeviceTag.Visible = true;
             interfaceToolTip.SetToolTip(currentDefaultNameLabel, displayName);
-            interfaceToolTip.SetToolTip(currentDefaultDeviceTag, defaultEntry.Device);
+            interfaceToolTip.SetToolTip(currentDefaultDeviceTag, currentDefaultDeviceTag.Text);
         }
 
         private void SelectInitialTarget(BootRowViewModel firstSwitchableRow)
@@ -2142,10 +2356,14 @@ namespace DualBootSwitcher
         private void UpdateActionButtons()
         {
             BootEntry selectedEntry = GetSelectedEntry();
+            UpdateBootStatusSummary(selectedEntry);
             bool canSetDefault = selectedEntry != null && !selectedEntry.IsDefault;
             setDefaultButton.Enabled = canSetDefault;
             setDefaultAndRestartButton.Enabled = canSetDefault;
             editRemarkButton.Enabled = selectedEntry != null;
+            renameButton.Enabled = selectedEntry != null;
+            restoreNameButton.Enabled = selectedEntry != null &&
+                !string.IsNullOrWhiteSpace(BootNameStore.GetOriginal(selectedEntry.Identifier));
 
             if (selectedEntry == null)
             {
@@ -2160,11 +2378,6 @@ namespace DualBootSwitcher
                 if (nextBootNameLabel != null)
                 {
                     nextBootNameLabel.Text = "请选择启动系统";
-                }
-                if (nextBootDeviceBadge != null)
-                {
-                    nextBootDeviceBadge.Text = "--";
-                    nextBootDeviceBadge.Visible = false;
                 }
                 return;
             }
@@ -2192,17 +2405,11 @@ namespace DualBootSwitcher
             selectedRemarkLabel.Text = string.IsNullOrWhiteSpace(remark) ? "未设置备注" : remark;
             selectedRemarkLabel.ForeColor = string.IsNullOrWhiteSpace(remark)
                 ? UiTheme.Muted
-                : UiTheme.Accent;
+                : UiTheme.HeaderMuted;
             if (nextBootNameLabel != null)
             {
                 nextBootNameLabel.Text = selectedEntry.Description;
                 interfaceToolTip.SetToolTip(nextBootNameLabel, selectedEntry.Description);
-            }
-            if (nextBootDeviceBadge != null)
-            {
-                nextBootDeviceBadge.Text = selectedEntry.Device;
-                nextBootDeviceBadge.Visible = true;
-                interfaceToolTip.SetToolTip(nextBootDeviceBadge, selectedEntry.Device);
             }
             interfaceToolTip.SetToolTip(selectedNameLabel, selectedEntry.Description);
             interfaceToolTip.SetToolTip(selectedRemarkLabel, selectedRemarkLabel.Text);
@@ -2213,9 +2420,45 @@ namespace DualBootSwitcher
             interfaceToolTip.SetToolTip(actionStatusLabel, actionStatusLabel.Text);
         }
 
+        private void UpdateBootStatusSummary(BootEntry selectedEntry)
+        {
+            if (bootStatusMetaLabel != null)
+            {
+                bootStatusMetaLabel.Text = selectedEntry == null
+                    ? "请选择启动项"
+                    : selectedEntry.Device + " · 已选择，尚未修改默认项";
+            }
+
+            if (bootStatusPill == null)
+            {
+                return;
+            }
+
+            if (selectedEntry == null)
+            {
+                bootStatusPill.Text = "等待选择";
+                bootStatusPill.BackColor = UiTheme.Disabled;
+                bootStatusPill.ForeColor = UiTheme.Muted;
+            }
+            else if (selectedEntry.IsDefault)
+            {
+                bootStatusPill.Text = "当前默认";
+                bootStatusPill.BackColor = UiTheme.SuccessSoft;
+                bootStatusPill.ForeColor = UiTheme.Success;
+            }
+            else
+            {
+                bootStatusPill.Text = "待设为默认";
+                bootStatusPill.BackColor = UiTheme.AccentSoft;
+                bootStatusPill.ForeColor = UiTheme.Accent;
+            }
+        }
+
         private void SetActionButtonsEnabled(bool enabled)
         {
             editRemarkButton.Enabled = enabled;
+            renameButton.Enabled = enabled;
+            restoreNameButton.Enabled = enabled;
             setDefaultButton.Enabled = enabled;
             setDefaultAndRestartButton.Enabled = enabled;
         }
@@ -2229,7 +2472,7 @@ namespace DualBootSwitcher
             }
 
             SelectBootRow(row, false);
-            EditSelectedRemark();
+            RenameSelectedEntry();
         }
 
         private void EditBootTimeout()
@@ -2292,8 +2535,13 @@ namespace DualBootSwitcher
         private void SetTimeoutDisplay(int seconds)
         {
             currentTimeoutSeconds = seconds;
-            timeoutButton.Text = "启动等待：" + seconds + " 秒";
+            timeoutButton.Text = "修改";
+            if (timeoutValueLabel != null)
+            {
+                timeoutValueLabel.Text = "启动等待：" + seconds + " 秒";
+            }
             timeoutButton.Enabled = true;
+            UpdateBootStatusSummary(GetSelectedEntry());
             interfaceToolTip.SetToolTip(
                 timeoutButton,
                 "当前启动菜单会等待 " + seconds + " 秒；点击可修改");
@@ -2324,6 +2572,127 @@ namespace DualBootSwitcher
                     UiDialogs.ShowError(this, "保存备注失败", exception.Message);
                 }
             }
+        }
+
+        private void RenameSelectedEntry()
+        {
+            BootEntry selectedEntry = GetSelectedEntry();
+            if (selectedEntry == null)
+            {
+                return;
+            }
+
+            bool canRestore = !string.IsNullOrWhiteSpace(
+                BootNameStore.GetOriginal(selectedEntry.Identifier));
+            using (var dialog = new RenameDialog(
+                selectedEntry.Description,
+                selectedEntry.Description,
+                canRestore))
+            {
+                DialogResult result = dialog.ShowDialog(this);
+                if (result == DialogResult.Retry && dialog.RestoreRequested)
+                {
+                    RestoreSelectedEntryName();
+                    return;
+                }
+
+                if (result != DialogResult.OK)
+                {
+                    return;
+                }
+
+                string error;
+                if (!BootNameValidator.TryValidate(dialog.NameValue, out error))
+                {
+                    UiDialogs.ShowError(this, "名称不可用", error);
+                    return;
+                }
+
+                if (string.Equals(selectedEntry.Description, dialog.NameValue,
+                    StringComparison.Ordinal))
+                {
+                    actionStatusLabel.Text = "启动项名称没有变化";
+                    return;
+                }
+
+                DialogResult confirmation = UiDialogs.Confirm(
+                    this,
+                    "确认重命名启动项",
+                    "将把启动菜单中的“" + selectedEntry.Description + "”改为“" +
+                    dialog.NameValue + "”。此操作只修改显示名称，不会修改启动逻辑。",
+                    "保存名称");
+                if (confirmation != DialogResult.OK)
+                {
+                    return;
+                }
+
+                try
+                {
+                    BcdService.Rename(selectedEntry, dialog.NameValue);
+                    UpdateRenameRow(selectedEntry);
+                    actionStatusLabel.Text = "启动项名称已更新";
+                }
+                catch (Exception exception)
+                {
+                    UiDialogs.ShowError(this, "重命名失败", exception.Message);
+                }
+            }
+        }
+
+        private void RestoreSelectedEntryName()
+        {
+            BootEntry selectedEntry = GetSelectedEntry();
+            if (selectedEntry == null ||
+                string.IsNullOrWhiteSpace(BootNameStore.GetOriginal(selectedEntry.Identifier)))
+            {
+                return;
+            }
+
+            DialogResult confirmation = UiDialogs.Confirm(
+                this,
+                "确认恢复原名称",
+                "将恢复“" + selectedEntry.Description + "”首次重命名前保存的原名称。",
+                "恢复原名称");
+            if (confirmation != DialogResult.OK)
+            {
+                return;
+            }
+
+            try
+            {
+                BcdService.RestoreOriginalName(selectedEntry);
+                UpdateRenameRow(selectedEntry);
+                actionStatusLabel.Text = "启动项原名称已恢复";
+            }
+            catch (Exception exception)
+            {
+                UiDialogs.ShowError(this, "恢复名称失败", exception.Message);
+            }
+        }
+
+        private void UpdateRenameRow(BootEntry entry)
+        {
+            foreach (BootRowViewModel row in bootRows)
+            {
+                if (row.Entry == entry)
+                {
+                    row.SetSystemName(entry.Description);
+                    break;
+                }
+            }
+
+            int selectedIndex = bootRows.IndexOf(selectedRow);
+            bootEntriesTable.DataSource = bootRows.ToArray();
+            UpdateAppleBootListItems();
+            if (selectedIndex >= 0)
+            {
+                SelectBootRow(bootRows[selectedIndex], true);
+            }
+            if (entry.IsDefault)
+            {
+                SetCurrentDefault(entry);
+            }
+            UpdateActionButtons();
         }
 
         private void UpdateRemarkRow(BootEntry entry)
@@ -2370,6 +2739,7 @@ namespace DualBootSwitcher
                 {
                     Tag = row,
                     Name = row.SystemName,
+                    Device = row.Device,
                     Remark = row.HasRemark ? row.Remark : string.Empty,
                     Status = row.Status,
                     IsDefault = row.IsDefault
@@ -2498,6 +2868,11 @@ namespace DualBootSwitcher
             {
                 HasRemark = !string.IsNullOrWhiteSpace(remark);
                 Remark = HasRemark ? remark : "未设置";
+            }
+
+            public void SetSystemName(string name)
+            {
+                SystemName = name ?? string.Empty;
             }
         }
     }

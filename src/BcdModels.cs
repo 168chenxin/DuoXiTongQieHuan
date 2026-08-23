@@ -28,6 +28,11 @@ namespace DualBootSwitcher
 
         public string Description { get; private set; }
 
+        internal void SetDescription(string description)
+        {
+            Description = description;
+        }
+
         public string Device { get; private set; }
 
         public bool IsDefault { get; set; }

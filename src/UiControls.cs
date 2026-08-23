@@ -370,6 +370,7 @@ namespace DualBootSwitcher
     {
         public object Tag { get; set; }
         public string Name { get; set; }
+        public string Device { get; set; }
         public string Remark { get; set; }
         public string Status { get; set; }
         public bool IsDefault { get; set; }
@@ -415,7 +416,7 @@ namespace DualBootSwitcher
 
         public int RowHeight
         {
-            get { return 58; }
+            get { return 68; }
         }
 
         public int HeaderHeight
@@ -476,13 +477,12 @@ namespace DualBootSwitcher
                 return Rectangle.Empty;
             }
 
-            int nameWidth = (int)Math.Round(ClientSize.Width * 0.48);
-            int remarkWidth = (int)Math.Round(ClientSize.Width * 0.28);
+            int remarkLeft = Math.Max(250, ClientSize.Width - 238);
             return new Rectangle(
-                nameWidth + 8,
-                HeaderHeight + (index * RowHeight) + 11,
-                Math.Max(100, remarkWidth - 16),
-                RowHeight - 22);
+                remarkLeft,
+                HeaderHeight + (index * RowHeight) + 16,
+                Math.Max(80, 112),
+                28);
         }
 
         protected override void OnPaint(PaintEventArgs eventArgs)
@@ -637,23 +637,61 @@ namespace DualBootSwitcher
 
         private void DrawHeader(Graphics graphics)
         {
+            using (var background = new SolidBrush(UiTheme.Vibrancy))
+            using (var separator = new Pen(UiTheme.Border, 1F))
+            using (GraphicsPath headerPath = CreateHeaderPath())
+            using (GraphicsPath topBorderPath = CreateHeaderTopBorderPath())
+            {
+                graphics.FillPath(background, headerPath);
+                graphics.DrawPath(separator, topBorderPath);
+                graphics.DrawLine(separator, 0, HeaderHeight - 1, Width, HeaderHeight - 1);
+            }
             using (var font = new Font("Segoe UI", 8.5F, FontStyle.Bold, GraphicsUnit.Point))
             {
+                int nameLeft = 57;
+                int remarkLeft = Math.Max(250, Width - 238);
+                int statusLeft = Math.Max(370, Width - 110);
                 TextRenderer.DrawText(graphics, "系统", font,
-                    new Rectangle(12, 0, (int)(Width * 0.48) - 12, HeaderHeight),
+                    new Rectangle(nameLeft, 0, Math.Max(80, remarkLeft - nameLeft - 12), HeaderHeight),
                     UiTheme.Muted, TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding);
                 TextRenderer.DrawText(graphics, "用途", font,
-                    new Rectangle((int)(Width * 0.48), 0, (int)(Width * 0.28), HeaderHeight),
+                    new Rectangle(remarkLeft, 0, Math.Max(56, statusLeft - remarkLeft - 12), HeaderHeight),
                     UiTheme.Muted, TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding);
                 TextRenderer.DrawText(graphics, "状态", font,
-                    new Rectangle((int)(Width * 0.76), 0, (int)(Width * 0.24) - 12, HeaderHeight),
+                    new Rectangle(statusLeft, 0, Math.Max(40, Width - statusLeft - 17), HeaderHeight),
                     UiTheme.Muted, TextFormatFlags.Right | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding);
             }
         }
 
+        private GraphicsPath CreateHeaderPath()
+        {
+            var path = new GraphicsPath();
+            float radius = Math.Min(8F, Math.Min(Width, HeaderHeight) / 2F);
+            float diameter = radius * 2F;
+            path.AddArc(0F, 0F, diameter, diameter, 180F, 90F);
+            path.AddLine(radius, 0F, Width - radius, 0F);
+            path.AddArc(Width - diameter, 0F, diameter, diameter, 270F, 90F);
+            path.AddLine(Width, radius, Width, HeaderHeight);
+            path.AddLine(Width, HeaderHeight, 0F, HeaderHeight);
+            path.AddLine(0F, HeaderHeight, 0F, radius);
+            path.CloseFigure();
+            return path;
+        }
+
+        private GraphicsPath CreateHeaderTopBorderPath()
+        {
+            var path = new GraphicsPath();
+            float radius = Math.Min(8F, Math.Min(Width, HeaderHeight) / 2F);
+            float diameter = radius * 2F;
+            path.AddArc(0F, 0F, diameter, diameter, 180F, 90F);
+            path.AddLine(radius, 0F, Width - radius, 0F);
+            path.AddArc(Width - diameter, 0F, diameter, diameter, 270F, 90F);
+            return path;
+        }
+
         private void DrawRow(Graphics graphics, AppleBootListItem item, int index)
         {
-            var rowBounds = new RectangleF(2F, HeaderHeight + (index * RowHeight) + 4F, Width - 4F, RowHeight - 8F);
+            var rowBounds = new RectangleF(0F, HeaderHeight + (index * RowHeight), Width, RowHeight);
             bool isSelected = index == selectedIndex;
             bool isPreviousSelected = index == previousSelectedIndex &&
                 previousSelectedIndex >= 0 && previousSelectedIndex != selectedIndex;
@@ -672,60 +710,59 @@ namespace DualBootSwitcher
                 {
                     fill = UiTheme.Hover;
                 }
-                using (GraphicsPath path = UiDrawing.CreateRoundedRectangle(rowBounds, 10F))
                 using (var brush = new SolidBrush(fill))
                 {
-                    graphics.FillPath(brush, path);
-                }
-
-                if (isSelected)
-                {
-                    using (var markerBrush = new SolidBrush(UiTheme.Accent))
-                    {
-                        graphics.FillRectangle(markerBrush,
-                            (int)rowBounds.Left,
-                            (int)rowBounds.Top + 8,
-                            3,
-                            (int)rowBounds.Height - 16);
-                    }
+                    graphics.FillRectangle(brush, Rectangle.Round(rowBounds));
                 }
             }
 
-            int textTop = (int)rowBounds.Top;
+            if (index > 0)
+            {
+                using (var linePen = new Pen(UiTheme.Border, 1F))
+                {
+                    graphics.DrawLine(linePen, 0, (int)rowBounds.Top, Width, (int)rowBounds.Top);
+                }
+            }
+
+            int rowTop = (int)rowBounds.Top;
+            int nameLeft = 57;
+            int remarkLeft = Math.Max(250, Width - 238);
+            int statusLeft = Math.Max(370, Width - 110);
             using (var nameFont = new Font("Segoe UI", 9.5F, FontStyle.Bold, GraphicsUnit.Point))
             using (var metaFont = new Font("Segoe UI", 8.5F, FontStyle.Regular, GraphicsUnit.Point))
             {
+                if (isSelected)
+                {
+                    using (var outerBrush = new SolidBrush(UiTheme.SelectionStrong))
+                    using (var markerBrush = new SolidBrush(UiTheme.Accent))
+                    {
+                        graphics.FillEllipse(outerBrush, 23, rowTop + 26, 16, 16);
+                        graphics.FillEllipse(markerBrush, 27, rowTop + 30, 8, 8);
+                    }
+                }
+
                 TextRenderer.DrawText(graphics, item.Name ?? string.Empty, nameFont,
-                    new Rectangle(14, textTop, (int)(Width * 0.46) - 14, (int)rowBounds.Height),
-                    UiTheme.Ink, TextFormatFlags.Left | TextFormatFlags.VerticalCenter |
+                    new Rectangle(nameLeft, rowTop + 13, Math.Max(100, remarkLeft - nameLeft - 12), 20),
+                    UiTheme.Ink, TextFormatFlags.Left |
                     TextFormatFlags.EndEllipsis | TextFormatFlags.NoPadding);
 
-                Rectangle remarkBounds = GetRemarkBounds(index);
+                string device = string.IsNullOrWhiteSpace(item.Device)
+                    ? "Windows 启动项"
+                    : item.Device + " · Windows 启动项";
+                TextRenderer.DrawText(graphics, device, metaFont,
+                    new Rectangle(nameLeft, rowTop + 37, Math.Max(100, remarkLeft - nameLeft - 12), 17),
+                    UiTheme.Muted, TextFormatFlags.Left | TextFormatFlags.EndEllipsis | TextFormatFlags.NoPadding);
+
                 string remark = string.IsNullOrWhiteSpace(item.Remark) ? "未设置" : item.Remark;
-                Size remarkSize = TextRenderer.MeasureText(remark, metaFont, Size.Empty, TextFormatFlags.NoPadding);
-                int pillWidth = Math.Min(remarkBounds.Width, remarkSize.Width + 20);
-                var pillBounds = new RectangleF(remarkBounds.Left, remarkBounds.Top, pillWidth, remarkBounds.Height);
-                using (GraphicsPath pillPath = UiDrawing.CreateRoundedRectangle(pillBounds, 9F))
-                using (var pillBrush = new SolidBrush(string.IsNullOrWhiteSpace(item.Remark)
-                    ? UiTheme.Disabled
-                    : UiTheme.AccentSoft))
-                {
-                    graphics.FillPath(pillBrush, pillPath);
-                }
                 TextRenderer.DrawText(graphics, remark, metaFont,
-                    Rectangle.Round(pillBounds), string.IsNullOrWhiteSpace(item.Remark) ? UiTheme.Muted : UiTheme.Accent,
-                    TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter |
+                    new Rectangle(remarkLeft, rowTop + 25, Math.Max(56, statusLeft - remarkLeft - 12), 20),
+                    string.IsNullOrWhiteSpace(item.Remark) ? UiTheme.Muted : UiTheme.Ink,
+                    TextFormatFlags.Left | TextFormatFlags.VerticalCenter |
                     TextFormatFlags.EndEllipsis | TextFormatFlags.NoPadding);
 
-                int dotX = (int)(Width * 0.78);
-                int dotY = textTop + ((int)rowBounds.Height / 2) - 3;
-                using (var dotBrush = new SolidBrush(item.IsDefault ? UiTheme.Success : Color.FromArgb(148, 163, 184)))
-                {
-                    graphics.FillEllipse(dotBrush, dotX, dotY, 7, 7);
-                }
                 TextRenderer.DrawText(graphics, item.Status ?? string.Empty, metaFont,
-                    new Rectangle(dotX + 13, textTop, Width - dotX - 22, (int)rowBounds.Height),
-                    item.IsDefault ? UiTheme.Success : UiTheme.Muted,
+                    new Rectangle(statusLeft, rowTop + 25, Math.Max(40, Width - statusLeft - 17), 20),
+                    item.IsDefault ? UiTheme.Success : UiTheme.Accent,
                     TextFormatFlags.Right | TextFormatFlags.VerticalCenter |
                     TextFormatFlags.EndEllipsis | TextFormatFlags.NoPadding);
             }

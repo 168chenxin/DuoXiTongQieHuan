@@ -96,9 +96,104 @@ namespace DualBootSwitcher
             throw new InvalidOperationException("bcdedit 设置启动等待时间失败：" + setResult.ErrorDetails);
         }
 
+        public static void Rename(BootEntry entry, string description)
+        {
+            if (entry == null || string.IsNullOrWhiteSpace(entry.Identifier))
+            {
+                throw new ArgumentException("请选择一个有效的启动项。", "entry");
+            }
+
+            string error;
+            if (!BootNameValidator.TryValidate(description, out error))
+            {
+                throw new ArgumentException(error, "description");
+            }
+
+            string candidate = description.Trim();
+            if (string.Equals(entry.Description, candidate, StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            BootNameStore.RememberOriginal(entry.Identifier, entry.Description);
+            WriteDescription(entry.Identifier, candidate);
+            entry.SetDescription(candidate);
+        }
+
+        public static void RestoreOriginalName(BootEntry entry)
+        {
+            if (entry == null || string.IsNullOrWhiteSpace(entry.Identifier))
+            {
+                throw new ArgumentException("请选择一个有效的启动项。", "entry");
+            }
+
+            string original = BootNameStore.GetOriginal(entry.Identifier);
+            if (string.IsNullOrWhiteSpace(original))
+            {
+                throw new InvalidOperationException("此启动项没有可恢复的原名称。");
+            }
+
+            WriteDescription(entry.Identifier, original);
+            entry.SetDescription(original);
+            BootNameStore.ClearOriginal(entry.Identifier);
+        }
+
+        internal static string BuildRenameArguments(string identifier, string description)
+        {
+            if (string.IsNullOrWhiteSpace(identifier) || identifier.IndexOf('"') >= 0 ||
+                identifier.IndexOf('\r') >= 0 || identifier.IndexOf('\n') >= 0)
+            {
+                throw new ArgumentException("启动项标识符无效。", "identifier");
+            }
+
+            string error;
+            if (!BootNameValidator.TryValidate(description, out error))
+            {
+                throw new ArgumentException(error, "description");
+            }
+
+            return "/set " + identifier.Trim() + " description \"" + description.Trim() + "\"";
+        }
+
+        internal static string ParseDescription(string output, string identifier)
+        {
+            foreach (BootEntry entry in BcdParser.ParseBootLoaders(output))
+            {
+                if (BcdParser.IdentifiersMatch(entry.Identifier, identifier))
+                {
+                    return entry.Description;
+                }
+            }
+
+            return string.Empty;
+        }
+
+        internal static bool WasDescriptionApplied(string identifier, string description, BcdCommandResult verificationResult)
+        {
+            return verificationResult != null &&
+                string.Equals(ParseDescription(verificationResult.CombinedOutput, identifier), description, StringComparison.Ordinal);
+        }
+
         public static void RestartComputer()
         {
             RunShutdown("/r /t 0", "自动重启失败");
+        }
+
+        private static void WriteDescription(string identifier, string description)
+        {
+            BcdCommandResult setResult = RunBcdEditRaw(BuildRenameArguments(identifier, description));
+            if (setResult.IsSuccess)
+            {
+                return;
+            }
+
+            BcdCommandResult verificationResult = RunBcdEditRaw("/enum " + identifier + " /v");
+            if (WasDescriptionApplied(identifier, description, verificationResult))
+            {
+                return;
+            }
+
+            throw new InvalidOperationException("bcdedit 修改启动项名称失败：" + setResult.ErrorDetails);
         }
 
         private static void RunShutdown(string arguments, string failureMessage)

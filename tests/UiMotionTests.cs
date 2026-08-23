@@ -20,6 +20,8 @@ internal static class UiMotionTests
             AnimatesPaintOffsetWithoutChangingLayout();
             OverlayAnimationDoesNotChangeParentColor();
             AppleBootListKeepsRowsStableWhileSelecting();
+            AppleBootListUsesStructuredHeaderSurface();
+            DashboardHeaderAndSummaryKeepApprovedGeometry();
             StopsAnimationWithoutCompletingIt();
             Console.WriteLine("UI motion tests passed.");
             return 0;
@@ -176,10 +178,43 @@ internal static class UiMotionTests
             control.SelectedIndex = 0;
             Rectangle originalBounds = control.Bounds;
             control.SelectedIndex = 1;
-            AssertEqual(58, control.RowHeight, "Boot list rows should keep the approved stable height.");
+            AssertEqual(68, control.RowHeight, "Boot list rows should keep the approved stable height.");
             AssertEqual(34, control.HeaderHeight, "Boot list headers should keep the approved stable height.");
             AssertTrue(control.Bounds == originalBounds, "Selecting a boot row must not change layout bounds.");
         }
+    }
+
+    private static void AppleBootListUsesStructuredHeaderSurface()
+    {
+        using (var list = new AppleBootList { Size = new Size(480, 170) })
+        using (var bitmap = new Bitmap(list.Width, list.Height))
+        {
+            list.SetItems(new[]
+            {
+                new AppleBootListItem { Name = "Windows 11", Status = "当前默认" }
+            });
+            list.DrawToBitmap(bitmap, new Rectangle(Point.Empty, bitmap.Size));
+
+            AssertColor(UiTheme.Vibrancy, bitmap.GetPixel(8, 8),
+                "The boot-list header should use the muted reference surface.");
+            Color separatorPixel = bitmap.GetPixel(8, list.HeaderHeight - 1);
+            AssertTrue(
+                separatorPixel.R < UiTheme.Vibrancy.R &&
+                separatorPixel.G < UiTheme.Vibrancy.G &&
+                separatorPixel.B < UiTheme.Vibrancy.B,
+                "The boot-list header should end with a visible separator.");
+        }
+    }
+
+    private static void DashboardHeaderAndSummaryKeepApprovedGeometry()
+    {
+        AssertEqual(58, UiTheme.DashboardHeaderHeight,
+            "The app bar should keep the approved fixed height.");
+        AssertEqual(88, UiTheme.DashboardSummaryBandHeight,
+            "The startup summary should keep the approved bounded height.");
+        AssertTrue(
+            UiTheme.DashboardStackBreakpoint < 980,
+            "The dashboard must be able to switch to a stacked layout before the desktop minimum width.");
     }
 
     private static void AssertClose(float expected, float actual, string message)
@@ -194,6 +229,15 @@ internal static class UiMotionTests
     private static void AssertEqual(int expected, int actual, string message)
     {
         if (expected != actual)
+        {
+            throw new InvalidOperationException(
+                message + " Expected: " + expected + "; actual: " + actual + ".");
+        }
+    }
+
+    private static void AssertColor(Color expected, Color actual, string message)
+    {
+        if (expected.ToArgb() != actual.ToArgb())
         {
             throw new InvalidOperationException(
                 message + " Expected: " + expected + "; actual: " + actual + ".");

@@ -18,6 +18,9 @@ namespace DualBootSwitcher
         private static readonly Regex TimeoutPattern = new Regex(
             @"^\s*(?:timeout|超时)\s+(?<seconds>\d+)\s*$",
             RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.CultureInvariant);
+        private static readonly Regex RamdiskPartitionPattern = new Regex(
+            @"^ramdisk=\[(?<device>[A-Z]:)\]",
+            RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 
         public static List<BootEntry> ParseBootLoaders(string output)
         {
@@ -134,6 +137,12 @@ namespace DualBootSwitcher
             if (device.StartsWith(partitionPrefix, StringComparison.OrdinalIgnoreCase))
             {
                 return device.Substring(partitionPrefix.Length);
+            }
+
+            Match ramdiskPartition = RamdiskPartitionPattern.Match(device);
+            if (ramdiskPartition.Success)
+            {
+                return ramdiskPartition.Groups["device"].Value.ToUpperInvariant();
             }
 
             return device;

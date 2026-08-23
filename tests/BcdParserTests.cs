@@ -56,12 +56,21 @@ Windows 启动管理器
 超时                    10
 ";
 
+    private const string RamdiskLoaderOutput = @"
+Windows Boot Loader
+-------------------
+identifier              {22222222-2222-2222-2222-222222222222}
+device                  ramdisk=[F:]\SYSOS\jsy10pe.wim,{97b7f564-9745-4b9c-aeab-907558fe1510}
+description             PE system
+";
+
     private static int Main()
     {
         try
         {
             ParsesEnglishLoaders();
             ParsesChineseProperties();
+            SimplifiesRamdiskDeviceLabels();
             FindsDefaultIdentifier();
             ParsesDisplayOrder();
             ParsesTimeout();
@@ -72,6 +81,8 @@ Windows 启动管理器
             ComparesIdentifiersWithoutCaseSensitivity();
             AcceptsReadableOutputFromNonzeroBcdResult();
             VerifiesAppliedDefaultAndTimeoutAfterNonzeroSetResult();
+            ValidatesBootEntryNamesBeforeBcdWrite();
+            BuildsSafeRenameCommandAndReadsBackDescription();
             if (Environment.GetEnvironmentVariable("DUAL_BOOT_SKIP_LIVE_BCD") != "1")
             {
                 ReadsTheActiveBcdStore();
@@ -103,6 +114,14 @@ Windows 启动管理器
         AssertEqual(1, entries.Count, "Expected one Chinese Windows boot entry.");
         AssertEqual("Windows 11", entries[0].Description, "Expected Chinese fixture description.");
         AssertEqual("D:", entries[0].Device, "Expected D: partition.");
+    }
+
+    private static void SimplifiesRamdiskDeviceLabels()
+    {
+        List<BootEntry> entries = BcdParser.ParseBootLoaders(RamdiskLoaderOutput);
+
+        AssertEqual("F:", entries[0].Device,
+            "Expected a ramdisk device to use its drive label in the interface.");
     }
 
     private static void FindsDefaultIdentifier()
@@ -174,6 +193,46 @@ Windows 启动管理器
         AssertTrue(
             !BcdService.WasTimeoutApplied(30, verification),
             "A different timeout must fail verification.");
+    }
+
+    private static void ValidatesBootEntryNamesBeforeBcdWrite()
+    {
+        string error;
+        AssertTrue(
+            BootNameValidator.TryValidate("Windows 11 工作系统", out error),
+            "A normal boot entry name should be accepted.");
+        AssertTrue(
+            !BootNameValidator.TryValidate("   ", out error),
+            "Whitespace-only boot entry names should be rejected.");
+        AssertTrue(
+            !BootNameValidator.TryValidate("Windows\n系统", out error),
+            "Boot entry names containing newlines should be rejected.");
+        AssertTrue(
+            !BootNameValidator.TryValidate("名称\"注入", out error),
+            "Boot entry names containing quotes should be rejected before process arguments are built.");
+        AssertTrue(
+            !BootNameValidator.TryValidate(new string('a', 81), out error),
+            "Boot entry names longer than 80 characters should be rejected.");
+    }
+
+    private static void BuildsSafeRenameCommandAndReadsBackDescription()
+    {
+        AssertEqual(
+            "/set {abc} description \"工作系统\"",
+            BcdService.BuildRenameArguments("{abc}", "工作系统"),
+            "The rename command should quote the validated description.");
+
+        const string renamedOutput = @"
+Windows Boot Loader
+-------------------
+identifier              {abc}
+description             工作系统
+device                  partition=C:
+";
+        AssertEqual(
+            "工作系统",
+            BcdService.ParseDescription(renamedOutput, "{ABC}"),
+            "The description should be read back for the renamed identifier.");
     }
 
     private static void RejectsInvalidTimeoutChanges()

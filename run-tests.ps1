@@ -21,6 +21,8 @@ $testExecutable = Join-Path $outputDirectory 'BcdParserTests.exe'
     "$root\src\BcdCommandResult.cs" `
     "$root\src\BcdParser.cs" `
     "$root\src\BcdService.cs" `
+    "$root\src\BootNameValidator.cs" `
+    "$root\src\BootNameStore.cs" `
     "$root\src\BootTimeoutWorkflow.cs" `
     "$root\tests\BcdParserTests.cs"
 
@@ -133,6 +135,23 @@ if ($LASTEXITCODE -ne 0) {
 
 if ($LASTEXITCODE -ne 0) {
     throw "Boot remark tests failed with exit code $LASTEXITCODE."
+}
+
+$nameStoreTestExecutable = Join-Path $outputDirectory 'BootNameStoreTests.exe'
+
+& $compiler /nologo /utf8output /codepage:65001 /target:exe "/out:$nameStoreTestExecutable" `
+    /r:System.dll /r:System.Core.dll `
+    "$root\src\BootNameStore.cs" `
+    "$root\tests\BootNameStoreTests.cs"
+
+if ($LASTEXITCODE -ne 0) {
+    throw "Boot name store test compilation failed with exit code $LASTEXITCODE."
+}
+
+& $nameStoreTestExecutable
+
+if ($LASTEXITCODE -ne 0) {
+    throw "Boot name store tests failed with exit code $LASTEXITCODE."
 }
 
 $logoPath = Join-Path $root 'assets\dual-boot-switcher-logo.png'
