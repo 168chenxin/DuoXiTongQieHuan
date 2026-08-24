@@ -204,3 +204,26 @@ if ($null -eq $elevationNode -or $elevationNode.GetAttribute('level') -ne 'requi
 Write-Host 'Manifest elevation test passed.'
 
 Write-Host 'Boot timeout save behavior test passed.'
+
+$installerScriptPath = Join-Path $root 'installer\DualBootSwitcher.iss'
+if (-not (Test-Path -LiteralPath $installerScriptPath)) {
+    throw 'The Inno Setup installer script is missing.'
+}
+
+$installerScript = Get-Content -Raw -Encoding UTF8 $installerScriptPath
+$requiredInstallerSettings = @(
+    'DefaultDirName={autopf}\DualBootSwitcher',
+    'DisableDirPage=no',
+    'OutputBaseFilename=DualBootSwitcher-Setup',
+    'Name: "desktopicon"; Description: "创建桌面快捷方式"; Flags: unchecked',
+    'Name: "{autoprograms}\多系统切换"; Filename: "{app}\DualBootSwitcher.exe"',
+    'Name: "{autodesktop}\多系统切换"; Filename: "{app}\DualBootSwitcher.exe"; Tasks: desktopicon'
+)
+
+foreach ($setting in $requiredInstallerSettings) {
+    if (-not $installerScript.Contains($setting)) {
+        throw "Installer script must include: $setting"
+    }
+}
+
+Write-Host 'Installer configuration test passed.'

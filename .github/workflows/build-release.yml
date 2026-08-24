@@ -32,6 +32,10 @@ jobs:
           RELEASE_TAG: ${{ github.ref_name }}
         run: ./tools/validate-release-version.ps1 -Tag $env:RELEASE_TAG
 
+      - name: Install Inno Setup
+        shell: pwsh
+        run: choco install innosetup --no-progress --yes
+
       - name: Build portable package
         shell: pwsh
         run: ./build.ps1
@@ -42,6 +46,7 @@ jobs:
           name: DualBootSwitcher-${{ github.sha }}
           path: |
             release/DualBootSwitcher.exe
+            release/DualBootSwitcher-Setup.exe
             release/DualBootSwitcher-portable.zip
           if-no-files-found: error
           retention-days: 14
@@ -81,6 +86,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release create $env:GITHUB_REF_NAME `
+            .\release\DualBootSwitcher-Setup.exe `
             .\release\DualBootSwitcher.exe `
             .\release\DualBootSwitcher-portable.zip `
             .\LICENSE `

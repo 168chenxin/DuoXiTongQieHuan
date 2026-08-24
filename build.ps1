@@ -70,9 +70,32 @@ if ($LASTEXITCODE -ne 0) {
     throw "Build failed with exit code $LASTEXITCODE."
 }
 
+$assemblyInfo = Get-Content -Raw -Encoding UTF8 (Join-Path $root 'src\AssemblyInfo.cs')
+$versionMatch = [regex]::Match($assemblyInfo, 'AssemblyVersion\("([0-9]+\.[0-9]+\.[0-9]+)\.0"\)')
+if (-not $versionMatch.Success) {
+    throw 'The application version could not be read from AssemblyInfo.cs.'
+}
+
+$installerCompiler = Get-Command ISCC.exe -ErrorAction SilentlyContinue
+if ($null -eq $installerCompiler) {
+    throw 'Inno Setup 6 is required to build the installer.'
+}
+
+& $installerCompiler.Source "/DMyAppVersion=$($versionMatch.Groups[1].Value)" (Join-Path $root 'installer\DualBootSwitcher.iss')
+
+if ($LASTEXITCODE -ne 0) {
+    throw "Installer build failed with exit code $LASTEXITCODE."
+}
+
+$installerPath = Join-Path $outputDirectory 'DualBootSwitcher-Setup.exe'
+if (-not (Test-Path -LiteralPath $installerPath)) {
+    throw 'Installer build completed without DualBootSwitcher-Setup.exe.'
+}
+
 $packagePath = Join-Path $outputDirectory 'DualBootSwitcher-portable.zip'
 Compress-Archive -LiteralPath $executablePath, (Join-Path $root 'README.md'), (Join-Path $root 'CHANGELOG.md'), (Join-Path $root 'ANNOUNCEMENT.md'), (Join-Path $root 'LICENSE'), (Join-Path $root 'assets\THIRD_PARTY_NOTICES.md'), (Join-Path $root 'assets\licenses\AntdUI-Apache-2.0.txt'), (Join-Path $root 'assets\licenses\OrbiEn-Apache-2.0.txt') `
     -DestinationPath $packagePath -Force
 
 Write-Host "Built: $executablePath"
+Write-Host "Installed package: $installerPath"
 Write-Host "Packaged: $packagePath"
