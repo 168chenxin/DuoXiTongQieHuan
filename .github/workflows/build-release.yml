@@ -62,6 +62,19 @@ jobs:
           name: DualBootSwitcher-${{ github.sha }}
           path: release
 
+      - name: Prepare Chinese release notes
+        shell: pwsh
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          $content = Get-Content -Raw CHANGELOG.md
+          $tag = [regex]::Escape($env:RELEASE_TAG)
+          $match = [regex]::Match($content, "(?ms)^## $tag\s*\r?\n(.*?)(?=^## |\z)")
+          if (-not $match.Success) {
+            throw "CHANGELOG.md has no release notes for $env:RELEASE_TAG."
+          }
+          [System.IO.File]::WriteAllText("release-notes.md", $match.Groups[1].Value.Trim() + [Environment]::NewLine, [System.Text.UTF8Encoding]::new($false))
+
       - name: Create GitHub Release
         shell: pwsh
         env:
@@ -72,5 +85,5 @@ jobs:
             .\release\DualBootSwitcher-portable.zip `
             .\LICENSE `
             --verify-tag `
-            --title "DualBootSwitcher $env:GITHUB_REF_NAME" `
-            --generate-notes
+            --title "多系统切换 $env:GITHUB_REF_NAME" `
+            --notes-file .\release-notes.md
