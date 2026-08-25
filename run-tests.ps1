@@ -212,18 +212,34 @@ if (-not (Test-Path -LiteralPath $installerScriptPath)) {
 
 $installerScript = Get-Content -Raw -Encoding UTF8 $installerScriptPath
 $requiredInstallerSettings = @(
-    'DefaultDirName={autopf}\DualBootSwitcher',
+    'AppName=多系统切换',
+    'AppPublisher=称心',
+    'DefaultDirName={code:GetDefaultInstallDir}',
     'DisableDirPage=no',
+    'DisableWelcomePage=no',
     'OutputBaseFilename=DualBootSwitcher-Setup',
-    'Name: "desktopicon"; Description: "创建桌面快捷方式"; Flags: unchecked',
+    'WizardImageFile=..\build\DualBootSwitcher-wizard.bmp',
+    'WizardSmallImageFile=..\build\DualBootSwitcher-wizard-small.bmp',
+    'MessagesFile: "ChineseSimplified.isl"',
+    'Name: "desktopicon"; Description: "创建桌面快捷方式"',
     'Name: "{autoprograms}\多系统切换"; Filename: "{app}\DualBootSwitcher.exe"',
-    'Name: "{autodesktop}\多系统切换"; Filename: "{app}\DualBootSwitcher.exe"; Tasks: desktopicon'
+    'Name: "{autodesktop}\多系统切换"; Filename: "{app}\DualBootSwitcher.exe"; Tasks: desktopicon',
+    'function GetDefaultInstallDir(Param: String): String;',
+    "Result := 'D:\DXTQH'",
+    "Result := ExpandConstant('{autopf}\DXTQH');",
+    '用于管理 Windows 启动菜单中的默认系统和启动等待时间。',
+    '欢迎使用多系统切换',
+    '作者：称心'
 )
 
 foreach ($setting in $requiredInstallerSettings) {
     if (-not $installerScript.Contains($setting)) {
         throw "Installer script must include: $setting"
     }
+}
+
+if ($installerScript.Contains('Name: "desktopicon"; Description: "创建桌面快捷方式"; Flags: unchecked')) {
+    throw 'The desktop shortcut task must be selected by default.'
 }
 
 Write-Host 'Installer configuration test passed.'

@@ -57,7 +57,7 @@ namespace DualBootSwitcher
         {
             MessageBox.Show(
                 "无法获取管理员权限。\r\n\r\n" + details,
-                "双系统快速切换",
+                "多系统切换",
                 MessageBoxButtons.OK,
                 MessageBoxIcon.Error);
         }

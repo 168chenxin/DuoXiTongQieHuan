@@ -89,7 +89,7 @@ namespace DualBootSwitcher
         internal const string RepositoryUrl = "https://github.com/" + Repository;
         internal const string ExecutableName = "DualBootSwitcher.exe";
         internal const string AnnouncementUrl = "https://api.github.com/repos/" + Repository + "/contents/ANNOUNCEMENT.md";
-        internal const string DefaultAnnouncement = "# 软件公告\r\n\r\n欢迎使用双系统快速切换。\r\n\r\n## 当前通知\r\n\r\n- 请始终从项目主页的 Releases 下载正式版本。";
+        internal const string DefaultAnnouncement = "# 软件公告\r\n\r\n欢迎使用多系统切换。\r\n\r\n## 当前通知\r\n\r\n- 请始终从项目主页的 Releases 下载正式版本。";
         private const int NetworkTimeoutMilliseconds = 12000;
 
         public static UpdateInfo FindUpdate(string json, Version currentVersion)

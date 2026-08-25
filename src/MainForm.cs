@@ -98,7 +98,7 @@ namespace DualBootSwitcher
 
         public MainForm()
         {
-            Text = "双系统快速切换";
+            Text = "多系统切换";
             StartPosition = FormStartPosition.CenterScreen;
             ClientSize = new Size(1080, 700);
             MinimumSize = new Size(760, 620);
@@ -470,7 +470,7 @@ namespace DualBootSwitcher
                 Font = new Font("Segoe UI", 13F, FontStyle.Bold, GraphicsUnit.Point),
                 ForeColor = UiTheme.Ink,
                 Location = new Point(94, 18),
-                Text = "双系统快速切换"
+                Text = "多系统切换"
             };
 
             var subtitle = new Label
@@ -590,7 +590,7 @@ namespace DualBootSwitcher
                 Font = new Font("Segoe UI", 10F, FontStyle.Bold, GraphicsUnit.Point),
                 ForeColor = UiTheme.Ink,
                 Location = new Point(56, 20),
-                Text = "双系统快速切换"
+                Text = "多系统切换"
             };
             githubButton = UiFactory.CreateButton("GitHub", 62, false);
             githubButton.AccessibleName = "打开 GitHub 项目主页";

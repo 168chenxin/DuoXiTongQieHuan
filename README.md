@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="assets/dual-boot-switcher-logo.png" width="132" alt="双系统快速切换 Logo">
+  <img src="assets/dual-boot-switcher-logo.png" width="132" alt="多系统切换 Logo">
 </p>
 
-<h1 align="center">双系统快速切换</h1>
+<h1 align="center">多系统切换</h1>
 
 <p align="center">一个可安装或直接运行的现代 Windows 小工具，用于在多个 Windows 引导项之间快速切换。</p>
 
@@ -11,6 +11,12 @@
   <img src="https://img.shields.io/badge/.NET%20Framework-4.x-512BD4" alt="基于 .NET Framework 4.x">
   <img src="https://img.shields.io/badge/支持-安装版与便携版-16A34A" alt="支持安装版与便携版">
 </p>
+
+## 安装向导
+
+- 推荐下载 DualBootSwitcher-Setup.exe。安装向导使用简体中文，展示软件 Logo、功能介绍和作者“称心”。
+- 默认安装目录为 D:\DXTQH；未检测到 D 盘时自动使用 C:\Program Files\DXTQH。安装时仍可选择其他目录。
+- “创建桌面快捷方式”默认勾选；安装完成后可从桌面或开始菜单打开多系统切换。
 
 ## 下载
 
@@ -21,7 +27,7 @@
 ## 界面预览
 
 <p align="center">
-  <img src="assets/app-preview.png" width="860" alt="双系统快速切换主界面，包含启动项列表、所选系统详情和切换操作">
+  <img src="assets/app-preview.png" width="860" alt="多系统切换主界面，包含启动项列表、所选系统详情和切换操作">
 </p>
 
 <p align="center"><sub>选择目标系统后，可以仅修改默认启动项，也可以确认后立即切换并重启。</sub></p>

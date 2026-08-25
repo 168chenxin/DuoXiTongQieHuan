@@ -24,6 +24,10 @@ $iconPath = Join-Path $buildDirectory 'DualBootSwitcher.ico'
 $embeddedLogoPath = Join-Path $buildDirectory 'DualBootSwitcher-logo.png'
 & (Join-Path $root 'tools\generate-icon.ps1') -OutputPath $iconPath -PngOutputPath $embeddedLogoPath
 
+$wizardImagePath = Join-Path $buildDirectory 'DualBootSwitcher-wizard.bmp'
+$wizardSmallImagePath = Join-Path $buildDirectory 'DualBootSwitcher-wizard-small.bmp'
+& (Join-Path $root 'tools\generate-installer-images.ps1') -WizardImagePath $wizardImagePath -WizardSmallImagePath $wizardSmallImagePath
+
 $executablePath = Join-Path $outputDirectory 'DualBootSwitcher.exe'
 
 & $compiler /nologo /utf8output /codepage:65001 /target:winexe /platform:anycpu `

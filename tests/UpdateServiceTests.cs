@@ -122,7 +122,7 @@ internal static class UpdateServiceTests
     private static void ProvidesOfflineAnnouncementFallback()
     {
         AssertTrue(
-            UpdateService.DefaultAnnouncement.Contains("双系统快速切换"),
+            UpdateService.DefaultAnnouncement.Contains("多系统切换"),
             "An embedded announcement should be available when the online announcement cannot be read.");
     }
 
