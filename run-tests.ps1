@@ -215,6 +215,7 @@ $requiredInstallerSettings = @(
     'AppName=多系统切换',
     'AppPublisher=称心',
     'DefaultDirName={code:GetDefaultInstallDir}',
+    'AppendDefaultDirName=no',
     'DisableDirPage=no',
     'DisableWelcomePage=no',
     'OutputBaseFilename=DualBootSwitcher-Setup',

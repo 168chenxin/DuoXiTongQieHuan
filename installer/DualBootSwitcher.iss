@@ -12,6 +12,7 @@ AppPublisher=称心
 AppComments=用于管理 Windows 启动菜单中的默认系统和启动等待时间。
 AppContact=https://github.com/168chenxin/DuoXiTongQieHuan
 DefaultDirName={code:GetDefaultInstallDir}
+AppendDefaultDirName=no
 DisableDirPage=no
 DisableProgramGroupPage=yes
 DisableWelcomePage=no
