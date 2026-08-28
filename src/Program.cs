@@ -9,13 +9,23 @@ namespace SysSwitch
     internal static class Program
     {
         [STAThread]
-        private static void Main()
+        private static void Main(string[] args)
         {
             EmbeddedAssemblyLoader.Register();
 
             if (!IsAdministrator())
             {
-                RequestAdministratorAccess();
+                RequestAdministratorAccess(args);
+                return;
+            }
+
+            if (BrandMigration.TryRunLegacyUninstaller(args))
+            {
+                return;
+            }
+
+            if (BrandMigration.TryStart(args))
+            {
                 return;
             }
 
@@ -25,13 +35,14 @@ namespace SysSwitch
             Application.Run(new MainForm());
         }
 
-        private static void RequestAdministratorAccess()
+        private static void RequestAdministratorAccess(string[] arguments)
         {
             try
             {
                 var startInfo = new ProcessStartInfo
                 {
                     FileName = Application.ExecutablePath,
+                    Arguments = BuildArguments(arguments),
                     UseShellExecute = true,
                     Verb = "runas"
                 };
@@ -51,6 +62,22 @@ namespace SysSwitch
             {
                 ShowElevationError(exception.Message);
             }
+        }
+
+        private static string BuildArguments(string[] arguments)
+        {
+            if (arguments == null || arguments.Length == 0)
+            {
+                return string.Empty;
+            }
+
+            string[] quotedArguments = new string[arguments.Length];
+            for (int index = 0; index < arguments.Length; index++)
+            {
+                quotedArguments[index] = "\"" + (arguments[index] ?? string.Empty).Replace("\"", "\\\"") + "\"";
+            }
+
+            return string.Join(" ", quotedArguments);
         }
 
         private static void ShowElevationError(string details)

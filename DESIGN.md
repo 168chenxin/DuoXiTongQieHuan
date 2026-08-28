@@ -1,5 +1,5 @@
 ---
-name: Dual Boot Switcher
+name: SysSwitch Master
 description: A single-page Windows boot workspace for safe boot-target selection.
 colors:
   brand: "#168C68"
@@ -63,7 +63,7 @@ components:
     height: "40px"
 ---
 
-# Design System: Dual Boot Switcher
+# Design System: SysSwitch Master
 
 ## 1. Overview
 

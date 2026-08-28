@@ -52,6 +52,7 @@ $executablePath = Join-Path $outputDirectory 'SysSwitch.exe'
     "$root\src\BootNameValidator.cs" `
     "$root\src\BootNameStore.cs" `
     "$root\src\UpdateService.cs" `
+    "$root\src\BrandMigration.cs" `
     "$root\src\BootRemarkStore.cs" `
     "$root\src\UiTheme.cs" `
     "$root\src\UiMotion.cs" `

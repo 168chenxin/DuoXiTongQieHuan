@@ -154,6 +154,23 @@ if ($LASTEXITCODE -ne 0) {
     throw "Boot name store tests failed with exit code $LASTEXITCODE."
 }
 
+$brandMigrationTestExecutable = Join-Path $outputDirectory 'BrandMigrationTests.exe'
+
+& $compiler /nologo /utf8output /codepage:65001 /target:exe "/out:$brandMigrationTestExecutable" `
+    /r:System.dll /r:System.Windows.Forms.dll `
+    "$root\src\BrandMigration.cs" `
+    "$root\tests\BrandMigrationTests.cs"
+
+if ($LASTEXITCODE -ne 0) {
+    throw "Brand migration test compilation failed with exit code $LASTEXITCODE."
+}
+
+& $brandMigrationTestExecutable
+
+if ($LASTEXITCODE -ne 0) {
+    throw "Brand migration tests failed with exit code $LASTEXITCODE."
+}
+
 $logoPath = Join-Path $root 'assets\SysSwitch-logo.png'
 if (-not (Test-Path -LiteralPath $logoPath)) {
     throw 'The embedded logo source is missing.'
@@ -251,13 +268,14 @@ Write-Host 'Installer configuration test passed.'
 
 $legacyBrandPatterns = @(
     '多系统切换',
+    'Dual Boot Switcher',
     'DualBootSwitcher',
     'DuoXiTongQieHuan',
     'DXTQH',
     'dual-boot-switcher'
 )
 $trackedTextFiles = git -C $root ls-files | Where-Object {
-    $_ -ne 'run-tests.ps1' -and ($_ -match '\.(cs|ps1|iss|md|yml|xml|manifest)$' -or $_ -eq 'LICENSE')
+    $_ -notin @('run-tests.ps1', 'CHANGELOG.md') -and ($_ -match '\.(cs|ps1|iss|md|yml|xml|manifest)$' -or $_ -eq 'LICENSE')
 }
 
 foreach ($relativePath in $trackedTextFiles) {
@@ -265,7 +283,7 @@ foreach ($relativePath in $trackedTextFiles) {
     foreach ($line in Get-Content -Encoding UTF8 (Join-Path $root $relativePath)) {
         $lineNumber++
         foreach ($legacyBrand in $legacyBrandPatterns) {
-            if ($line.Contains($legacyBrand) -and -not $line.Contains('Legacy')) {
+            if ($line.Contains($legacyBrand) -and $line -notmatch 'Legacy') {
                 throw "Legacy brand '$legacyBrand' remains in ${relativePath}:$lineNumber."
             }
         }
