@@ -266,6 +266,22 @@ if ($installerScript.Contains('Name: "desktopicon"; Description: "创建桌面�
 
 Write-Host 'Installer configuration test passed.'
 
+$releaseWorkflow = Get-Content -Raw -Encoding UTF8 (Join-Path $root '.github\workflows\build-release.yml')
+$requiredReleaseAssetSettings = @(
+    "Copy-Item '.\release\系统切换大师-安装包.exe' '.\release\SysSwitch-Setup.exe'",
+    "Copy-Item '.\release\系统切换大师-便携版.zip' '.\release\SysSwitch-Portable.zip'",
+    '".\release\SysSwitch-Setup.exe#系统切换大师-安装包.exe"',
+    '".\release\SysSwitch-Portable.zip#系统切换大师-便携版.zip"'
+)
+
+foreach ($setting in $requiredReleaseAssetSettings) {
+    if (-not $releaseWorkflow.Contains($setting)) {
+        throw "Release workflow must include: $setting"
+    }
+}
+
+Write-Host 'Release asset naming test passed.'
+
 $legacyBrandPatterns = @(
     '多系统切换',
     'Dual Boot Switcher',

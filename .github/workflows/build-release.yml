@@ -72,6 +72,12 @@ jobs:
           name: SysSwitch-${{ github.sha }}
           path: release
 
+      - name: Prepare GitHub-compatible asset names
+        shell: pwsh
+        run: |
+          Copy-Item '.\release\系统切换大师-安装包.exe' '.\release\SysSwitch-Setup.exe'
+          Copy-Item '.\release\系统切换大师-便携版.zip' '.\release\SysSwitch-Portable.zip'
+
       - name: Prepare Chinese release notes
         shell: pwsh
         env:
@@ -92,9 +98,9 @@ jobs:
         run: |
           $LegacyUpdateAsset = '.\release\DualBootSwitcher.exe'
           gh release create $env:GITHUB_REF_NAME `
-            .\release\系统切换大师-安装包.exe `
+            ".\release\SysSwitch-Setup.exe#系统切换大师-安装包.exe" `
             .\release\SysSwitch.exe `
-            .\release\系统切换大师-便携版.zip `
+            ".\release\SysSwitch-Portable.zip#系统切换大师-便携版.zip" `
             $LegacyUpdateAsset `
             .\LICENSE `
             --verify-tag `
