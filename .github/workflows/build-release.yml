@@ -40,14 +40,19 @@ jobs:
         shell: pwsh
         run: ./build.ps1
 
+      - name: Prepare legacy updater compatibility
+        shell: pwsh
+        run: |
+          $LegacyUpdateAsset = '.\release\DualBootSwitcher.exe'
+          Copy-Item .\release\SysSwitch.exe $LegacyUpdateAsset
+
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
           name: SysSwitch-${{ github.sha }}
           path: |
-            release/SysSwitch.exe
-            release/系统切换大师-安装包.exe
-            release/系统切换大师-便携版.zip
+            release/*.exe
+            release/*.zip
           if-no-files-found: error
           retention-days: 14
 
@@ -85,10 +90,12 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          $LegacyUpdateAsset = '.\release\DualBootSwitcher.exe'
           gh release create $env:GITHUB_REF_NAME `
             .\release\系统切换大师-安装包.exe `
             .\release\SysSwitch.exe `
             .\release\系统切换大师-便携版.zip `
+            $LegacyUpdateAsset `
             .\LICENSE `
             --verify-tag `
             --title "系统切换大师 $env:GITHUB_REF_NAME" `
