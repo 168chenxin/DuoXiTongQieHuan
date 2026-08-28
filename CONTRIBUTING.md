@@ -1,6 +1,6 @@
 # Contributing
 
-感谢参与 DualBootSwitcher。提交改动前请先阅读 `README.md` 的安全边界。
+感谢参与 SysSwitch。提交改动前请先阅读 `README.md` 的安全边界。
 
 ## 开发环境
 

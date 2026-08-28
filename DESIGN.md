@@ -151,7 +151,7 @@ Depth is created with the neutral canvas behind white surfaces and one-pixel `#D
 
 ### Remarks
 - **Entry point:** `编辑备注` button or double-clicking a boot row.
-- **Storage:** current-user registry under `Software\DualBootSwitcher\BootRemarks`, keyed by the BCD identifier.
+- **Storage:** current-user registry under `Software\SysSwitch\BootRemarks`, keyed by the BCD identifier.
 - **Safety:** remarks never call `bcdedit`; only the explicit default/restart actions modify the Windows BCD.
 
 ### Boot Timeout

@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace DualBootSwitcher
+namespace SysSwitch
 {
     internal sealed class BootConfiguration
     {

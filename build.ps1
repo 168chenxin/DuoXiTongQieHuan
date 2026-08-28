@@ -20,26 +20,26 @@ $dependencyDirectory = Join-Path $buildDirectory 'dependencies'
 & (Join-Path $root 'tools\restore-ui-dependencies.ps1') -OutputDirectory $dependencyDirectory
 $antdUiAssembly = Join-Path $dependencyDirectory 'AntdUI.dll'
 
-$iconPath = Join-Path $buildDirectory 'DualBootSwitcher.ico'
-$embeddedLogoPath = Join-Path $buildDirectory 'DualBootSwitcher-logo.png'
+$iconPath = Join-Path $buildDirectory 'SysSwitch.ico'
+$embeddedLogoPath = Join-Path $buildDirectory 'SysSwitch-logo.png'
 & (Join-Path $root 'tools\generate-icon.ps1') -OutputPath $iconPath -PngOutputPath $embeddedLogoPath
 
-$wizardImagePath = Join-Path $buildDirectory 'DualBootSwitcher-wizard.bmp'
-$wizardSmallImagePath = Join-Path $buildDirectory 'DualBootSwitcher-wizard-small.bmp'
+$wizardImagePath = Join-Path $buildDirectory 'SysSwitch-wizard.bmp'
+$wizardSmallImagePath = Join-Path $buildDirectory 'SysSwitch-wizard-small.bmp'
 & (Join-Path $root 'tools\generate-installer-images.ps1') -WizardImagePath $wizardImagePath -WizardSmallImagePath $wizardSmallImagePath
 
-$executablePath = Join-Path $outputDirectory 'DualBootSwitcher.exe'
+$executablePath = Join-Path $outputDirectory 'SysSwitch.exe'
 
 & $compiler /nologo /utf8output /codepage:65001 /target:winexe /platform:anycpu `
     "/out:$executablePath" `
     "/win32icon:$iconPath" `
     "/win32manifest:$root\src\app.manifest" `
-    "/resource:$embeddedLogoPath,DualBootSwitcher.Logo.png" `
-    "/resource:$root\LICENSE,DualBootSwitcher.LICENSE.txt" `
-    "/resource:$root\assets\licenses\AntdUI-Apache-2.0.txt,DualBootSwitcher.Licenses.AntdUI-Apache-2.0.txt" `
-    "/resource:$root\assets\licenses\OrbiEn-Apache-2.0.txt,DualBootSwitcher.Licenses.OrbiEn-Apache-2.0.txt" `
-    "/resource:$root\assets\THIRD_PARTY_NOTICES.md,DualBootSwitcher.THIRD_PARTY_NOTICES.md" `
-    "/resource:$antdUiAssembly,DualBootSwitcher.Dependencies.AntdUI.dll" `
+    "/resource:$embeddedLogoPath,SysSwitch.Logo.png" `
+    "/resource:$root\LICENSE,SysSwitch.LICENSE.txt" `
+    "/resource:$root\assets\licenses\AntdUI-Apache-2.0.txt,SysSwitch.Licenses.AntdUI-Apache-2.0.txt" `
+    "/resource:$root\assets\licenses\OrbiEn-Apache-2.0.txt,SysSwitch.Licenses.OrbiEn-Apache-2.0.txt" `
+    "/resource:$root\assets\THIRD_PARTY_NOTICES.md,SysSwitch.THIRD_PARTY_NOTICES.md" `
+    "/resource:$antdUiAssembly,SysSwitch.Dependencies.AntdUI.dll" `
     /r:System.dll /r:System.Design.dll /r:System.Drawing.dll /r:System.Windows.Forms.dll `
     /r:System.Runtime.Serialization.dll `
     "/r:$antdUiAssembly" `
@@ -85,18 +85,18 @@ if ($null -eq $installerCompiler) {
     throw 'Inno Setup 6 is required to build the installer.'
 }
 
-& $installerCompiler.Source "/DMyAppVersion=$($versionMatch.Groups[1].Value)" (Join-Path $root 'installer\DualBootSwitcher.iss')
+& $installerCompiler.Source "/DMyAppVersion=$($versionMatch.Groups[1].Value)" (Join-Path $root 'installer\SysSwitch.iss')
 
 if ($LASTEXITCODE -ne 0) {
     throw "Installer build failed with exit code $LASTEXITCODE."
 }
 
-$installerPath = Join-Path $outputDirectory 'DualBootSwitcher-Setup.exe'
+$installerPath = Join-Path $outputDirectory '系统切换大师-安装包.exe'
 if (-not (Test-Path -LiteralPath $installerPath)) {
-    throw 'Installer build completed without DualBootSwitcher-Setup.exe.'
+    throw 'Installer build completed without 系统切换大师-安装包.exe.'
 }
 
-$packagePath = Join-Path $outputDirectory 'DualBootSwitcher-portable.zip'
+$packagePath = Join-Path $outputDirectory '系统切换大师-便携版.zip'
 Compress-Archive -LiteralPath $executablePath, (Join-Path $root 'README.md'), (Join-Path $root 'CHANGELOG.md'), (Join-Path $root 'ANNOUNCEMENT.md'), (Join-Path $root 'LICENSE'), (Join-Path $root 'assets\THIRD_PARTY_NOTICES.md'), (Join-Path $root 'assets\licenses\AntdUI-Apache-2.0.txt'), (Join-Path $root 'assets\licenses\OrbiEn-Apache-2.0.txt') `
     -DestinationPath $packagePath -Force
 

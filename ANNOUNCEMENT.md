@@ -1,13 +1,15 @@
 # 软件公告
 
-v1.5.5 已发布。
+v1.6.0 已发布。
 
 ## 本次更新
 
+- 软件正式名称已更新为“系统切换大师”。
+- 核心程序统一为 `SysSwitch.exe`，新安装默认使用 `D:\SysSwitch`。
+- 安装包、桌面快捷方式、开始菜单和所有窗口统一显示中文名称。
 - 修复安装目录浏览窗口“新建文件夹”按钮不显示的问题。
-- 正式名称统一为“多系统切换”，安装向导全部使用简体中文。
 - 安装向导展示软件 Logo、功能简介和作者“称心”。
-- 默认安装目录为 D:\DXTQH；未检测到 D 盘时自动使用 C:\Program Files\DXTQH。
+- 默认安装目录为 D:\SysSwitch；未检测到 D 盘时自动使用 C:\Program Files\SysSwitch。
 - “创建桌面快捷方式”默认勾选，安装时仍可修改安装目录。
 
 ## 软件功能
@@ -22,4 +24,4 @@ v1.5.5 已发布。
 
 ## 项目主页
 
-[打开多系统切换 GitHub 项目主页](https://github.com/168chenxin/DuoXiTongQieHuan)
+[打开系统切换大师 GitHub 项目主页](https://github.com/168chenxin/SysSwitch-Master)

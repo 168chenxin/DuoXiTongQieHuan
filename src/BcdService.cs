@@ -4,7 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Text;
 
-namespace DualBootSwitcher
+namespace SysSwitch
 {
     internal static class BcdService
     {

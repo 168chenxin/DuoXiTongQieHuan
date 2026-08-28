@@ -1,4 +1,4 @@
-namespace DualBootSwitcher
+namespace SysSwitch
 {
     internal sealed class BcdCommandResult
     {

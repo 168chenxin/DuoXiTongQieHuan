@@ -1,6 +1,6 @@
 using System.Drawing;
 
-namespace DualBootSwitcher
+namespace SysSwitch
 {
     internal static class UiTheme
     {

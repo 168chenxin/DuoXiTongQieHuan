@@ -8,7 +8,7 @@ $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.Drawing
 
 $scriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
-$sourcePath = Join-Path $scriptRoot '..\assets\dual-boot-switcher-logo.png'
+$sourcePath = Join-Path $scriptRoot '..\assets\SysSwitch-logo.png'
 
 if (-not (Test-Path -LiteralPath $sourcePath)) {
     throw "The logo source was not found: $sourcePath"

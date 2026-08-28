@@ -43,11 +43,11 @@ jobs:
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: DualBootSwitcher-${{ github.sha }}
+          name: SysSwitch-${{ github.sha }}
           path: |
-            release/DualBootSwitcher.exe
-            release/DualBootSwitcher-Setup.exe
-            release/DualBootSwitcher-portable.zip
+            release/SysSwitch.exe
+            release/系统切换大师-安装包.exe
+            release/系统切换大师-便携版.zip
           if-no-files-found: error
           retention-days: 14
 
@@ -64,7 +64,7 @@ jobs:
       - name: Download build artifact
         uses: actions/download-artifact@v4
         with:
-          name: DualBootSwitcher-${{ github.sha }}
+          name: SysSwitch-${{ github.sha }}
           path: release
 
       - name: Prepare Chinese release notes
@@ -86,10 +86,10 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release create $env:GITHUB_REF_NAME `
-            .\release\DualBootSwitcher-Setup.exe `
-            .\release\DualBootSwitcher.exe `
-            .\release\DualBootSwitcher-portable.zip `
+            .\release\系统切换大师-安装包.exe `
+            .\release\SysSwitch.exe `
+            .\release\系统切换大师-便携版.zip `
             .\LICENSE `
             --verify-tag `
-            --title "多系统切换 $env:GITHUB_REF_NAME" `
+            --title "系统切换大师 $env:GITHUB_REF_NAME" `
             --notes-file .\release-notes.md

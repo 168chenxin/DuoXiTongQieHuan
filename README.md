@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="assets/dual-boot-switcher-logo.png" width="132" alt="多系统切换 Logo">
+  <img src="assets/SysSwitch-logo.png" width="132" alt="系统切换大师 Logo">
 </p>
 
-<h1 align="center">多系统切换</h1>
+<h1 align="center">系统切换大师</h1>
 
 <p align="center">一个可安装或直接运行的现代 Windows 小工具，用于在多个 Windows 引导项之间快速切换。</p>
 
@@ -14,33 +14,33 @@
 
 ## 安装向导
 
-- 推荐下载 DualBootSwitcher-Setup.exe。安装向导使用简体中文，展示软件 Logo、功能介绍和作者“称心”。
-- 默认安装目录为 D:\DXTQH；未检测到 D 盘时自动使用 C:\Program Files\DXTQH。安装时仍可选择其他目录。
-- “创建桌面快捷方式”默认勾选；安装完成后可从桌面或开始菜单打开多系统切换。
+- 推荐下载 `系统切换大师-安装包.exe`。安装向导使用简体中文，展示软件 Logo、功能介绍和作者“称心”。
+- 默认安装目录为 D:\SysSwitch；未检测到 D 盘时自动使用 C:\Program Files\SysSwitch。安装时仍可选择其他目录。
+- “创建桌面快捷方式”默认勾选；安装完成后可从桌面或开始菜单打开系统切换大师。
 
 ## 下载
 
-打开 GitHub 仓库的 **Releases** 页面，优先下载 `DualBootSwitcher-Setup.exe`。双击安装包后可选择安装目录，并可选创建桌面快捷方式；完成安装即可从开始菜单或桌面打开软件。
+打开 GitHub 仓库的 **Releases** 页面，优先下载 `系统切换大师-安装包.exe`。双击安装包后可选择安装目录，并可选创建桌面快捷方式；完成安装即可从开始菜单或桌面打开软件。
 
-也可下载 `DualBootSwitcher.exe`（单文件便携版）或 `DualBootSwitcher-portable.zip`（附带 README 和许可证）。所有版本首次运行仍会按 Windows 的 UAC 规则申请管理员权限。
+也可下载 `SysSwitch.exe`（单文件便携版）或 `系统切换大师-便携版.zip`（附带 README 和许可证）。所有版本首次运行仍会按 Windows 的 UAC 规则申请管理员权限。
 
 ## 界面预览
 
 <p align="center">
-  <img src="assets/app-preview.png" width="860" alt="多系统切换主界面，包含启动项列表、所选系统详情和切换操作">
+  <img src="assets/app-preview.png" width="860" alt="系统切换大师主界面，包含启动项列表、所选系统详情和切换操作">
 </p>
 
 <p align="center"><sub>选择目标系统后，可以仅修改默认启动项，也可以确认后立即切换并重启。</sub></p>
 
 ## 安装与便携运行
 
-- 安装版会将程序写入你在安装向导中选择的目录，创建“多系统切换”开始菜单入口，并在 Windows 的“已安装的应用”中提供卸载入口。
-- 软件内云更新只下载 GitHub Release 中经 SHA-256 校验的 `DualBootSwitcher.exe`，并原地替换已安装或便携运行的主程序，不会更改安装目录或快捷方式。
+- 安装版会将程序写入你在安装向导中选择的目录，创建“系统切换大师”开始菜单入口，并在 Windows 的“已安装的应用”中提供卸载入口。
+- 软件内云更新只下载 GitHub Release 中经 SHA-256 校验的 `SysSwitch.exe`，并原地替换已安装或便携运行的主程序，不会更改安装目录或快捷方式。
 - 适用于 Windows 10 和 Windows 11，使用系统自带的 .NET Framework 4.x；不需要安装 SDK、运行库、DLL 或其他附件。
 - 启动后会在后台检查 GitHub 最新正式版；发现更新时可在软件内下载、校验并自动替换重启。
 - 软件启动时会通过 GitHub Contents API 自动读取并显示官方 `ANNOUNCEMENT.md`，不依赖仓库分支名称；发布者更新该文件后，用户无需下载新版 EXE 即可查看新内容。公告支持 Markdown 的大标题、小标题、正文、列表、分隔线、HTTPS 图片和 HTTPS 链接；窗口内始终提供可点击的项目主页链接。
 - 本地 Windows 系统切换通过 Windows BCD 默认项完成。
-- `release\DualBootSwitcher-Setup.exe` 是推荐的安装包；`release\DualBootSwitcher.exe` 可直接双击运行，`release\DualBootSwitcher-portable.zip` 用于方便分发和附带说明文件。
+- `release\系统切换大师-安装包.exe` 是推荐的安装包；`release\SysSwitch.exe` 可直接双击运行，`release\系统切换大师-便携版.zip` 用于方便分发和附带说明文件。
 - Logo 和程序图标已嵌入 exe；标题区直接使用内嵌高清 PNG 绘制，不会放大低分辨率 ICO，也不依赖旁边的资源文件。
 - AntdUI 2.4.4、Logo、许可证和全部运行代码均嵌入 exe，运行时不需要旁边放置 DLL 或其他资源。
 - 表格选择、按钮悬停/按压/加载、输入焦点和状态文字采用短缓动，并自动跟随 Windows 的界面动画设置。
@@ -53,7 +53,7 @@
 
 ## 使用方法
 
-1. 双击 `release\DualBootSwitcher-Setup.exe`。
+1. 双击 `release\系统切换大师-安装包.exe`。
 2. 在安装向导中选择安装目录，按需勾选“创建桌面快捷方式”，然后完成安装。
 3. 从开始菜单、桌面快捷方式或安装完成页启动软件。
 4. 在 Windows 的管理员权限提示中点击“是”。
@@ -73,7 +73,7 @@
 ## 安全边界
 
 - 程序只读取 Windows BCD 引导配置，并调用 `bcdedit /default` 设置默认启动项、调用 `bcdedit /timeout` 设置启动菜单等待时间。
-- 启动项备注保存在当前用户注册表 `HKCU\Software\DualBootSwitcher\BootRemarks`，与 BCD 修改完全分开。
+- 启动项备注保存在当前用户注册表 `HKCU\Software\SysSwitch\BootRemarks`，与 BCD 修改完全分开。
 - 不会删除、重命名或创建任何引导项。
 - 只显示 Windows 启动菜单中实际可选的系统；隐藏的恢复或遗留加载器不会被显示或设为默认项。
 - “切换并重启”会先显示确认提示；确认前不会修改引导配置。
@@ -89,7 +89,7 @@
 .\run-tests.ps1
 ```
 
-构建产物会生成在 `release\DualBootSwitcher.exe`、`release\DualBootSwitcher-Setup.exe` 和 `release\DualBootSwitcher-portable.zip`。GitHub Actions 会在推送 `v*` 标签时自动构建并创建 Release。
+构建产物会生成在 `release\SysSwitch.exe`、`release\系统切换大师-安装包.exe` 和 `release\系统切换大师-便携版.zip`。GitHub Actions 会在推送 `v*` 标签时自动构建并创建 Release。
 
 首次构建会从 NuGet 下载固定版本的 AntdUI，并校验 SHA-256；本机构建安装包还需要 Inno Setup 6。该 DLL 只用于编译并会嵌入 exe，最终发布目录不会包含外部 DLL。
 
@@ -103,7 +103,7 @@
 
 ## 图标来源
 
-应用 Logo 使用用户提供的 `assets\dual-boot-switcher-logo.png`，构建时会裁掉透明外边距并嵌入多尺寸 ICO。运行时不读取该 PNG。
+应用 Logo 使用用户提供的 `assets\SysSwitch-logo.png`，构建时会裁掉透明外边距并嵌入多尺寸 ICO。运行时不读取该 PNG。
 
 ## UI 配色来源
 

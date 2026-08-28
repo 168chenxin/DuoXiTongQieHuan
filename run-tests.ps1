@@ -154,7 +154,7 @@ if ($LASTEXITCODE -ne 0) {
     throw "Boot name store tests failed with exit code $LASTEXITCODE."
 }
 
-$logoPath = Join-Path $root 'assets\dual-boot-switcher-logo.png'
+$logoPath = Join-Path $root 'assets\SysSwitch-logo.png'
 if (-not (Test-Path -LiteralPath $logoPath)) {
     throw 'The embedded logo source is missing.'
 }
@@ -205,31 +205,35 @@ Write-Host 'Manifest elevation test passed.'
 
 Write-Host 'Boot timeout save behavior test passed.'
 
-$installerScriptPath = Join-Path $root 'installer\DualBootSwitcher.iss'
+$installerScriptPath = Join-Path $root 'installer\SysSwitch.iss'
 if (-not (Test-Path -LiteralPath $installerScriptPath)) {
     throw 'The Inno Setup installer script is missing.'
 }
 
 $installerScript = Get-Content -Raw -Encoding UTF8 $installerScriptPath
 $requiredInstallerSettings = @(
-    'AppName=多系统切换',
+    '#define MyAppExeName "SysSwitch.exe"',
+    'AppName=系统切换大师',
     'AppPublisher=称心',
+    'AppContact=https://github.com/168chenxin/SysSwitch-Master',
+    'VersionInfoDescription=系统切换大师安装程序',
+    'VersionInfoProductName=系统切换大师',
     'DefaultDirName={code:GetDefaultInstallDir}',
     'AppendDefaultDirName=no',
     'DisableDirPage=no',
     'DisableWelcomePage=no',
-    'OutputBaseFilename=DualBootSwitcher-Setup',
-    'WizardImageFile=..\build\DualBootSwitcher-wizard.bmp',
-    'WizardSmallImageFile=..\build\DualBootSwitcher-wizard-small.bmp',
+    'OutputBaseFilename=系统切换大师-安装包',
+    'WizardImageFile=..\build\SysSwitch-wizard.bmp',
+    'WizardSmallImageFile=..\build\SysSwitch-wizard-small.bmp',
     'MessagesFile: "ChineseSimplified.isl"',
     'Name: "desktopicon"; Description: "创建桌面快捷方式"',
-    'Name: "{autoprograms}\多系统切换"; Filename: "{app}\DualBootSwitcher.exe"',
-    'Name: "{autodesktop}\多系统切换"; Filename: "{app}\DualBootSwitcher.exe"; Tasks: desktopicon',
+    'Name: "{autoprograms}\系统切换大师"; Filename: "{app}\SysSwitch.exe"',
+    'Name: "{autodesktop}\系统切换大师"; Filename: "{app}\SysSwitch.exe"; Tasks: desktopicon',
     'function GetDefaultInstallDir(Param: String): String;',
-    "Result := 'D:\DXTQH'",
-    "Result := ExpandConstant('{autopf}\DXTQH');",
+    "Result := 'D:\SysSwitch'",
+    "Result := ExpandConstant('{autopf}\SysSwitch');",
     '用于管理 Windows 启动菜单中的默认系统和启动等待时间。',
-    '欢迎使用多系统切换',
+    '欢迎使用系统切换大师',
     '作者：称心'
 )
 
@@ -244,3 +248,28 @@ if ($installerScript.Contains('Name: "desktopicon"; Description: "创建桌面�
 }
 
 Write-Host 'Installer configuration test passed.'
+
+$legacyBrandPatterns = @(
+    '多系统切换',
+    'DualBootSwitcher',
+    'DuoXiTongQieHuan',
+    'DXTQH',
+    'dual-boot-switcher'
+)
+$trackedTextFiles = git -C $root ls-files | Where-Object {
+    $_ -ne 'run-tests.ps1' -and ($_ -match '\.(cs|ps1|iss|md|yml|xml|manifest)$' -or $_ -eq 'LICENSE')
+}
+
+foreach ($relativePath in $trackedTextFiles) {
+    $lineNumber = 0
+    foreach ($line in Get-Content -Encoding UTF8 (Join-Path $root $relativePath)) {
+        $lineNumber++
+        foreach ($legacyBrand in $legacyBrandPatterns) {
+            if ($line.Contains($legacyBrand) -and -not $line.Contains('Legacy')) {
+                throw "Legacy brand '$legacyBrand' remains in ${relativePath}:$lineNumber."
+            }
+        }
+    }
+}
+
+Write-Host 'Brand naming test passed.'

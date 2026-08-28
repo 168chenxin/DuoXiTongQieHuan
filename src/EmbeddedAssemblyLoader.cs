@@ -3,11 +3,11 @@ using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 
-namespace DualBootSwitcher
+namespace SysSwitch
 {
     internal static class EmbeddedAssemblyLoader
     {
-        private const string ResourcePrefix = "DualBootSwitcher.Dependencies.";
+        private const string ResourcePrefix = "SysSwitch.Dependencies.";
         private static readonly object SyncRoot = new object();
         private static readonly Dictionary<string, Assembly> LoadedAssemblies =
             new Dictionary<string, Assembly>(StringComparer.OrdinalIgnoreCase);

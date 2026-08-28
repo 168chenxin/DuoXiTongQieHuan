@@ -1,6 +1,6 @@
 using System;
 using System.Drawing;
-using DualBootSwitcher;
+using SysSwitch;
 
 internal static class AntdUiThemeTests
 {

@@ -4,7 +4,7 @@ using System.Drawing;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
-namespace DualBootSwitcher
+namespace SysSwitch
 {
     internal static class UiMotion
     {

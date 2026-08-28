@@ -1,5 +1,13 @@
 # Product
 
+## Brand
+
+- 软件品牌全称：系统切换大师（SysSwitch Master）
+- 对外展示名称：系统切换大师
+- 开发部署标识：SysSwitch Master
+- 核心程序与安装目录短名：SysSwitch
+- GitHub 仓库：SysSwitch-Master
+
 ## Register
 
 product

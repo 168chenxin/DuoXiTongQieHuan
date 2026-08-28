@@ -1,6 +1,6 @@
 using System;
 
-namespace DualBootSwitcher
+namespace SysSwitch
 {
     internal enum BootTimeoutChangeResult
     {

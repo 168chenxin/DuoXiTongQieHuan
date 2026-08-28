@@ -4,7 +4,7 @@ using System.Diagnostics;
 using System.Security.Principal;
 using System.Windows.Forms;
 
-namespace DualBootSwitcher
+namespace SysSwitch
 {
     internal static class Program
     {
@@ -57,7 +57,7 @@ namespace DualBootSwitcher
         {
             MessageBox.Show(
                 "无法获取管理员权限。\r\n\r\n" + details,
-                "多系统切换",
+                "系统切换大师",
                 MessageBoxButtons.OK,
                 MessageBoxIcon.Error);
         }

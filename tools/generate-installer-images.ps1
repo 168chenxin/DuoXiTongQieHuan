@@ -9,7 +9,7 @@ $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.Drawing
 
 $root = Split-Path -Parent $MyInvocation.MyCommand.Path
-$sourcePath = Join-Path $root '..\assets\dual-boot-switcher-logo.png'
+$sourcePath = Join-Path $root '..\assets\SysSwitch-logo.png'
 $sourceImage = [System.Drawing.Image]::FromFile((Resolve-Path -LiteralPath $sourcePath))
 
 function Save-WizardImage {
@@ -40,7 +40,7 @@ function Save-WizardImage {
                 $format.Alignment = [System.Drawing.StringAlignment]::Center
                 $titleBounds = [System.Drawing.RectangleF]::new(0, [single]($Height - 54), $Width, 24)
                 $authorBounds = [System.Drawing.RectangleF]::new(0, [single]($Height - 29), $Width, 18)
-                $graphics.DrawString('多系统切换', $titleFont, [System.Drawing.Brushes]::Black, $titleBounds, $format)
+                $graphics.DrawString('系统切换大师', $titleFont, [System.Drawing.Brushes]::Black, $titleBounds, $format)
                 $graphics.DrawString('作者：称心', $textFont, [System.Drawing.Brushes]::DimGray, $authorBounds, $format)
                 $format.Dispose()
             }

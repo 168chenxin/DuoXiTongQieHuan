@@ -1,11 +1,12 @@
 using System;
 using Microsoft.Win32;
 
-namespace DualBootSwitcher
+namespace SysSwitch
 {
     internal static class BootRemarkStore
     {
-        private const string KeyPath = @"Software\DualBootSwitcher\BootRemarks";
+        private const string KeyPath = @"Software\SysSwitch\BootRemarks";
+        private const string LegacyKeyPath = @"Software\DualBootSwitcher\BootRemarks";
 
         public static string Get(string identifier)
         {
@@ -17,16 +18,23 @@ namespace DualBootSwitcher
 
             try
             {
-                using (RegistryKey key = Registry.CurrentUser.OpenSubKey(KeyPath, false))
+                string value = ReadValue(KeyPath, valueName);
+                if (value.Length == 0)
                 {
-                    if (key == null)
+                    value = ReadValue(LegacyKeyPath, valueName);
+                    if (value.Length != 0)
                     {
-                        return string.Empty;
+                        try
+                        {
+                            Set(identifier, value);
+                        }
+                        catch (InvalidOperationException)
+                        {
+                        }
                     }
-
-                    object value = key.GetValue(valueName, string.Empty);
-                    return value == null ? string.Empty : value.ToString().Trim();
                 }
+
+                return value;
             }
             catch (Exception)
             {
@@ -55,6 +63,13 @@ namespace DualBootSwitcher
                     if (normalizedRemark.Length == 0)
                     {
                         key.DeleteValue(valueName, false);
+                        using (RegistryKey legacyKey = Registry.CurrentUser.OpenSubKey(LegacyKeyPath, true))
+                        {
+                            if (legacyKey != null)
+                            {
+                                legacyKey.DeleteValue(valueName, false);
+                            }
+                        }
                         return;
                     }
 
@@ -75,6 +90,15 @@ namespace DualBootSwitcher
             }
 
             return identifier.Trim().Replace("\\", "_");
+        }
+
+        private static string ReadValue(string keyPath, string valueName)
+        {
+            using (RegistryKey key = Registry.CurrentUser.OpenSubKey(keyPath, false))
+            {
+                object value = key == null ? null : key.GetValue(valueName, string.Empty);
+                return value == null ? string.Empty : value.ToString().Trim();
+            }
         }
     }
 }

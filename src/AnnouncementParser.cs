@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 
-namespace DualBootSwitcher
+namespace SysSwitch
 {
     internal static class AnnouncementParser
     {

@@ -7,7 +7,7 @@ using System.Windows.Forms;
 using AntPanel = AntdUI.Panel;
 using AntTag = AntdUI.Tag;
 
-namespace DualBootSwitcher
+namespace SysSwitch
 {
     internal sealed class AnnouncementDialog : StyledDialogForm
     {

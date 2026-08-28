@@ -2,7 +2,7 @@ using System;
 using System.IO;
 using System.Security.Cryptography;
 using System.Text;
-using DualBootSwitcher;
+using SysSwitch;
 
 internal static class UpdateServiceTests
 {
@@ -19,6 +19,7 @@ internal static class UpdateServiceTests
             NormalizesAnnouncementContent();
             ParsesGitHubAnnouncementContent();
             ProvidesOfflineAnnouncementFallback();
+            UsesSysSwitchReleaseIdentity();
             Console.WriteLine("Update service tests passed.");
             return 0;
         }
@@ -31,7 +32,7 @@ internal static class UpdateServiceTests
 
     private static void ParsesOnlyNewStableExecutableReleases()
     {
-        const string json = "{\"tag_name\":\"v1.4.0\",\"draft\":false,\"prerelease\":false,\"html_url\":\"https://github.com/example/release\",\"assets\":[{\"name\":\"DualBootSwitcher.exe\",\"browser_download_url\":\"https://github.com/example/app.exe\",\"digest\":\"sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\"}]}";
+        const string json = "{\"tag_name\":\"v1.4.0\",\"draft\":false,\"prerelease\":false,\"html_url\":\"https://github.com/example/release\",\"assets\":[{\"name\":\"SysSwitch.exe\",\"browser_download_url\":\"https://github.com/example/app.exe\",\"digest\":\"sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\"}]}";
         UpdateInfo update = UpdateService.FindUpdate(json, new Version(1, 3, 1, 0));
         AssertTrue(update != null, "A newer stable executable release should be offered.");
         AssertEqual("v1.4.0", update.Tag, "The release tag should be preserved.");
@@ -77,7 +78,7 @@ internal static class UpdateServiceTests
 
     private static void RequiresSecureExecutableUrls()
     {
-        const string json = "{\"tag_name\":\"v1.4.0\",\"draft\":false,\"prerelease\":false,\"html_url\":\"https://github.com/example/release\",\"assets\":[{\"name\":\"DualBootSwitcher.exe\",\"browser_download_url\":\"http://example.com/app.exe\",\"digest\":\"sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\"}]}";
+        const string json = "{\"tag_name\":\"v1.4.0\",\"draft\":false,\"prerelease\":false,\"html_url\":\"https://github.com/example/release\",\"assets\":[{\"name\":\"SysSwitch.exe\",\"browser_download_url\":\"http://example.com/app.exe\",\"digest\":\"sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\"}]}";
         AssertTrue(
             UpdateService.FindUpdate(json, new Version(1, 3, 1, 0)) == null,
             "Insecure executable download URLs must not be offered as automatic updates.");
@@ -101,7 +102,7 @@ internal static class UpdateServiceTests
 
     private static void RejectsReleaseWithoutVerifiedExecutable()
     {
-        const string json = "{\"tag_name\":\"v1.4.0\",\"draft\":false,\"prerelease\":false,\"assets\":[{\"name\":\"DualBootSwitcher.exe\",\"browser_download_url\":\"https://github.com/example/app.exe\",\"digest\":null}]}";
+        const string json = "{\"tag_name\":\"v1.4.0\",\"draft\":false,\"prerelease\":false,\"assets\":[{\"name\":\"SysSwitch.exe\",\"browser_download_url\":\"https://github.com/example/app.exe\",\"digest\":null}]}";
         AssertTrue(
             UpdateService.FindUpdate(json, new Version(1, 3, 1, 0)) == null,
             "An executable without a GitHub SHA-256 digest must not be offered.");
@@ -122,8 +123,14 @@ internal static class UpdateServiceTests
     private static void ProvidesOfflineAnnouncementFallback()
     {
         AssertTrue(
-            UpdateService.DefaultAnnouncement.Contains("多系统切换"),
+            UpdateService.DefaultAnnouncement.Contains("系统切换大师"),
             "An embedded announcement should be available when the online announcement cannot be read.");
+    }
+
+    private static void UsesSysSwitchReleaseIdentity()
+    {
+        AssertEqual("168chenxin/SysSwitch-Master", UpdateService.Repository, "The updater should use the renamed repository.");
+        AssertEqual("SysSwitch.exe", UpdateService.ExecutableName, "The updater should require the renamed executable.");
     }
 
     private static void ParsesGitHubAnnouncementContent()

@@ -2,7 +2,7 @@ using System;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Windows.Forms;
-using DualBootSwitcher;
+using SysSwitch;
 
 internal static class UiMotionTests
 {

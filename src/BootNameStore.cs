@@ -1,11 +1,12 @@
 using System;
 using Microsoft.Win32;
 
-namespace DualBootSwitcher
+namespace SysSwitch
 {
     internal static class BootNameStore
     {
-        private const string KeyPath = @"Software\DualBootSwitcher\BootNames";
+        private const string KeyPath = @"Software\SysSwitch\BootNames";
+        private const string LegacyKeyPath = @"Software\DualBootSwitcher\BootNames";
 
         public static string GetOriginal(string identifier)
         {
@@ -14,11 +15,29 @@ namespace DualBootSwitcher
                 return string.Empty;
             }
 
-            using (RegistryKey key = Registry.CurrentUser.OpenSubKey(KeyPath, false))
+            string value = ReadValue(KeyPath, identifier);
+            if (string.IsNullOrWhiteSpace(value))
             {
-                object value = key == null ? null : key.GetValue(identifier, null);
-                return value == null ? string.Empty : value.ToString();
+                value = ReadValue(LegacyKeyPath, identifier);
+                if (!string.IsNullOrWhiteSpace(value))
+                {
+                    try
+                    {
+                        using (RegistryKey key = Registry.CurrentUser.CreateSubKey(KeyPath))
+                        {
+                            if (key != null)
+                            {
+                                key.SetValue(identifier, value, RegistryValueKind.String);
+                            }
+                        }
+                    }
+                    catch (Exception)
+                    {
+                    }
+                }
             }
+
+            return value;
         }
 
         public static void RememberOriginal(string identifier, string description)
@@ -53,6 +72,22 @@ namespace DualBootSwitcher
                 {
                     key.DeleteValue(identifier, false);
                 }
+            }
+            using (RegistryKey key = Registry.CurrentUser.OpenSubKey(LegacyKeyPath, true))
+            {
+                if (key != null)
+                {
+                    key.DeleteValue(identifier, false);
+                }
+            }
+        }
+
+        private static string ReadValue(string keyPath, string identifier)
+        {
+            using (RegistryKey key = Registry.CurrentUser.OpenSubKey(keyPath, false))
+            {
+                object value = key == null ? null : key.GetValue(identifier, null);
+                return value == null ? string.Empty : value.ToString();
             }
         }
     }

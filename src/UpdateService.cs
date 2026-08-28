@@ -7,7 +7,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 
-namespace DualBootSwitcher
+namespace SysSwitch
 {
     [DataContract]
     internal sealed class GitHubRelease
@@ -85,11 +85,11 @@ namespace DualBootSwitcher
 
     internal static class UpdateService
     {
-        internal const string Repository = "168chenxin/DuoXiTongQieHuan";
+        internal const string Repository = "168chenxin/SysSwitch-Master";
         internal const string RepositoryUrl = "https://github.com/" + Repository;
-        internal const string ExecutableName = "DualBootSwitcher.exe";
+        internal const string ExecutableName = "SysSwitch.exe";
         internal const string AnnouncementUrl = "https://api.github.com/repos/" + Repository + "/contents/ANNOUNCEMENT.md";
-        internal const string DefaultAnnouncement = "# 软件公告\r\n\r\n欢迎使用多系统切换。\r\n\r\n## 当前通知\r\n\r\n- 请始终从项目主页的 Releases 下载正式版本。";
+        internal const string DefaultAnnouncement = "# 软件公告\r\n\r\n欢迎使用系统切换大师。\r\n\r\n## 当前通知\r\n\r\n- 请始终从项目主页的 Releases 下载正式版本。";
         private const int NetworkTimeoutMilliseconds = 12000;
 
         public static UpdateInfo FindUpdate(string json, Version currentVersion)
@@ -203,7 +203,7 @@ namespace DualBootSwitcher
 
             string temporaryPath = Path.Combine(
                 Path.GetTempPath(),
-                "DualBootSwitcher-" + update.Tag + "-" + Guid.NewGuid().ToString("N") + ".exe");
+                "SysSwitch-" + update.Tag + "-" + Guid.NewGuid().ToString("N") + ".exe");
             try
             {
                 DownloadFile(update.Asset.DownloadUrl, temporaryPath, cancellationToken);
@@ -231,7 +231,7 @@ namespace DualBootSwitcher
             string targetPath = Path.GetFullPath(System.Windows.Forms.Application.ExecutablePath);
             string scriptPath = Path.Combine(
                 Path.GetTempPath(),
-                "DualBootSwitcher-update-" + Guid.NewGuid().ToString("N") + ".cmd");
+                "SysSwitch-update-" + Guid.NewGuid().ToString("N") + ".cmd");
             string backupPath = targetPath + ".previous";
             string script = BuildUpdateScript(downloadedPath, targetPath, backupPath);
             File.WriteAllText(scriptPath, script, new UTF8Encoding(false));
@@ -345,7 +345,7 @@ namespace DualBootSwitcher
         {
             var request = (HttpWebRequest)WebRequest.Create(url);
             request.Method = "GET";
-            request.UserAgent = "DualBootSwitcher/" + typeof(UpdateService).Assembly.GetName().Version;
+            request.UserAgent = "SysSwitch/" + typeof(UpdateService).Assembly.GetName().Version;
             request.Accept = "application/vnd.github+json";
             request.Timeout = NetworkTimeoutMilliseconds;
             request.ReadWriteTimeout = NetworkTimeoutMilliseconds;
@@ -361,7 +361,7 @@ namespace DualBootSwitcher
         {
             var request = (HttpWebRequest)WebRequest.Create(url);
             request.Method = "GET";
-            request.UserAgent = "DualBootSwitcher/" + typeof(UpdateService).Assembly.GetName().Version;
+            request.UserAgent = "SysSwitch/" + typeof(UpdateService).Assembly.GetName().Version;
             request.Timeout = NetworkTimeoutMilliseconds;
             request.ReadWriteTimeout = NetworkTimeoutMilliseconds;
             using (WebResponse response = request.GetResponse())

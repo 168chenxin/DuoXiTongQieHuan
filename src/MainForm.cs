@@ -13,7 +13,7 @@ using AntPanel = AntdUI.Panel;
 using AntTable = AntdUI.Table;
 using AntTag = AntdUI.Tag;
 
-namespace DualBootSwitcher
+namespace SysSwitch
 {
     internal sealed class MainForm : Form
     {
@@ -98,7 +98,7 @@ namespace DualBootSwitcher
 
         public MainForm()
         {
-            Text = "多系统切换";
+            Text = "系统切换大师";
             StartPosition = FormStartPosition.CenterScreen;
             ClientSize = new Size(1080, 700);
             MinimumSize = new Size(760, 620);
@@ -430,7 +430,7 @@ namespace DualBootSwitcher
             }
 
             using (Stream logoStream = Assembly.GetExecutingAssembly().GetManifestResourceStream(
-                "DualBootSwitcher.Logo.png"))
+                "SysSwitch.Logo.png"))
             {
                 if (logoStream != null)
                 {
@@ -470,7 +470,7 @@ namespace DualBootSwitcher
                 Font = new Font("Segoe UI", 13F, FontStyle.Bold, GraphicsUnit.Point),
                 ForeColor = UiTheme.Ink,
                 Location = new Point(94, 18),
-                Text = "多系统切换"
+                Text = "系统切换大师"
             };
 
             var subtitle = new Label
@@ -590,7 +590,7 @@ namespace DualBootSwitcher
                 Font = new Font("Segoe UI", 10F, FontStyle.Bold, GraphicsUnit.Point),
                 ForeColor = UiTheme.Ink,
                 Location = new Point(56, 20),
-                Text = "多系统切换"
+                Text = "系统切换大师"
             };
             githubButton = UiFactory.CreateButton("GitHub", 62, false);
             githubButton.AccessibleName = "打开 GitHub 项目主页";

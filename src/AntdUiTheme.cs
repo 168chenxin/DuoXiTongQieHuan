@@ -1,7 +1,7 @@
 using System.Drawing;
 using System.Windows.Forms;
 
-namespace DualBootSwitcher
+namespace SysSwitch
 {
     internal static class AntdUiTheme
     {

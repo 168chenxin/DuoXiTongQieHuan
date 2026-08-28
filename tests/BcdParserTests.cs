@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using DualBootSwitcher;
+using SysSwitch;
 
 internal static class BcdParserTests
 {
